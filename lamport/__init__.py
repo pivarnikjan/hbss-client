@@ -1,0 +1,1 @@
+from . import lamport_beta
