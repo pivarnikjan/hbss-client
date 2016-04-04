@@ -6,7 +6,7 @@ import json
 from PyQt4.QtGui import *
 
 import merkle
-import hbss_utilities
+import hbss_utills
 
 
 class QuantumSignatureGUI(QMainWindow):
@@ -45,7 +45,7 @@ class QuantumSignatureGUI(QMainWindow):
     def sign_click(self):
         fname = self.fileTextbox.text()
 
-        hashFromFile = hbss_utilities.calculate_hash_from_file(open(fname, 'rb'), sha512())
+        hashFromFile = hbss_utills.calculate_hash_from_file(open(fname, 'rb'), sha512())
 
         mytree = merkle.MerkleTree(4)
         publicKey = str(base64.b64encode(mytree.tree_public_key()),'utf-8')
