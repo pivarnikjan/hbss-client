@@ -16,18 +16,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import json
 import base64
+import json
 
-from hbss_utills import hash_function, hash_function_digest
+from utils.hbss_utills import hash_function, hash_function_digest
 
 try:
     from ssl import RAND_bytes as RNG
 except ImportError:
     from Crypto import Random as RNG
 
-
-class Keypair:
+class Keypair():
 
     @staticmethod
     def _bin_b64str(binary_stuff):
@@ -114,14 +113,6 @@ class Keypair:
             del (secret_seeds)
             return private_key, public_key, None
 
-    def _exportable_key(self, key=None):
-        export_key = []
-        for unit in key:
-            unit0 = self._bin_b64str(unit[0])
-            unit1 = self._bin_b64str(unit[1])
-            export_key.append([unit0, unit1])
-        return export_key
-
     def _exportable_seed(self):
         export_seed = []
         unit0 = self._bin_b64str(self.rng_secret[0])
@@ -129,13 +120,9 @@ class Keypair:
         export_seed.append([unit0,unit1])
         return export_seed
 
-    def read_json(self,file):
-        with open(file,'r') as data_file:
-            data=json.load(data_file)
-        return data
-
     def import_seed_only(self, jsonFile):
-        secret_seed = self.read_json(jsonFile)
+        with open(jsonFile,'r') as data:
+            secret_seed = json.load(data)
         key_seed = []
         unit0 = self._b64str_bin(secret_seed['seed'][0])
         unit1 = self._b64str_bin(secret_seed['seed'][1])
@@ -155,8 +142,18 @@ class Keypair:
                 key_bin.append([unit0, unit1])
             return key_bin
 
-        key_pair = self.read_json(jsonFile)
+        with open(jsonFile,'r') as data:
+            key_pair = json.load(data)
+
         return parse_key(key_pair[0]['pub']), parse_key(key_pair[1]['priv'])
+
+    def _exportable_key(self, key=None):
+        export_key = []
+        for unit in key:
+            unit0 = self._bin_b64str(unit[0])
+            unit1 = self._bin_b64str(unit[1])
+            export_key.append([unit0, unit1])
+        return export_key
 
     def export_key_pair(self, file):
         def make_list():
@@ -173,7 +170,7 @@ class Keypair:
 def main():
     kluc = Keypair(RNG=RNG)
     kluc.export_key_pair('keys.json')
-    # kluc.export_seed_only("seed.json")
+    kluc.export_seed_only("seed.json")
     privatekey, publickey = kluc.import_key_pair('keys.json')
 
 

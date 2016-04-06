@@ -17,7 +17,8 @@
 """
 
 from hashlib import sha512, sha256
-import bitstring
+
+from utils import bitstring
 
 
 def calculate_hash_from_file(afile, hasher, blocksize=65536):

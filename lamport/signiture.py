@@ -15,9 +15,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
 import base64
-from hbss_utills import bit_hash,hash_function_digest
+import json
+from ssl import RAND_bytes as RNG
+
+from lamport import keys_generation
+from utils.hbss_utills import bit_hash, hash_function_digest
+
 
 class Signer():
     def __init__(self, keypair):
@@ -26,25 +30,33 @@ class Signer():
             raise ValueError("Specified key has no private part; cannot sign!")
 
     def generate_signature(self, message):
-        '''Generate base-64 encoded string signature in utf-8.
-        Signature is a concatenation of _generate_signature output.
-        Verifiers can regenerate the binary signature by byte-decoding
-        from utf-8, b64-decoding the binary, and breaking into 64byte chunks.
-        '''
-        binary_sig = self._generate_signature(message)
-        concat_bin_sig = b''.join(binary_sig)
-        b64_bin_sig = base64.b64encode(concat_bin_sig)
-        utf8_sig = str(b64_bin_sig, 'utf-8')
-        return utf8_sig
-
-    def _generate_signature(self, message):
-        'Generate binary signature as a list of 64-byte binary private numbers.'
-        bithash = bit_hash(hash_function_digest(message,hash_fn_name="sha512"))
+        bithash = bit_hash(hash_function_digest(message, hash_fn_name="sha512"))
         Revealed_Numbers = []
         counter = 0
         for bit in bithash:
             private_numbers_for_bit = self.keypair.private_key[counter]
-            # Below: if bit is true, int(bit) is 1, if False, 0.
             Revealed_Numbers.append(private_numbers_for_bit[bit])
             counter += 1
         return Revealed_Numbers
+
+    def _format_signature(self, signature):
+        exportable_signature = []
+        for unit in signature:
+            exportable_signature.append(str(base64.b64encode(bytes(unit)), encoding='utf-8'))
+        return exportable_signature
+
+    def export_signature(self, message, file):
+        export_list = []
+        export_list.append({'sig': self._format_signature(self.generate_signature(message))})
+
+        with open(file, 'w') as jsonFile:
+            json.dump(export_list, jsonFile, indent=2)
+
+
+def test():
+    key_pair = keys_generation.Keypair(RNG=RNG, hash_function="sha256", hash_fn_length=256)
+    Signer(key_pair).export_signature('jano'.encode('utf-8'), 'signature.json')
+
+
+if __name__ == '__main__':
+    test()

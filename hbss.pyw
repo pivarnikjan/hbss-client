@@ -1,12 +1,12 @@
-import sys
-from hashlib import sha512
 import base64
 import json
+import sys
+from hashlib import sha512
 
 from PyQt4.QtGui import *
 
 import merkle
-import hbss_utills
+from utils import hbss_utills
 
 
 class QuantumSignatureGUI(QMainWindow):
