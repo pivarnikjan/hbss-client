@@ -29,14 +29,14 @@ def calculate_hash_from_file(afile, hasher, blocksize=65536):
     return hasher.digest()
 
 
-def hash_function_digest(position, hash_fn_name=None):
+def hash_function_digest(position, hash_fn_name):
     if hash_fn_name == "sha512":
         return sha512(position).digest()
     elif hash_fn_name == "sha256":
         return sha256(position).digest()
 
 
-def hash_function(hash_fn_name=None):
+def hash_function(hash_fn_name):
     if hash_fn_name == "sha512":
         return sha512()
     elif hash_fn_name == "sha256":
@@ -47,7 +47,7 @@ def bit_hash(message_hash):
     'Returns a list of bools representing the bits of message_hash'
     if not isinstance(message_hash, bytes):
         raise TypeError(("message_hash must be a binary hash, "
-                         "as returned by sha512.digest()"))
+                         "as returned by *.digest()"))
     hash_bits = bitstring.BitString(message_hash)
     # There is a reason we're converting booleans (low-memory usage)
     # to ints (probably higher memory usage): the values for each

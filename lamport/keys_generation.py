@@ -26,8 +26,8 @@ try:
 except ImportError:
     from Crypto import Random as RNG
 
-class Keypair():
 
+class Keypair():
     @staticmethod
     def _bin_b64str(binary_stuff):
         'Shorthand: Converts bytes into b64-encoded strings.'
@@ -42,11 +42,15 @@ class Keypair():
                  all_RNG=False):
 
         if private_seed:
-            private_seed = self.import_seed_only(private_seed)
+            private_seed = self._import_seed_only(private_seed)
             self.private_key, self.public_key, self.rng_secret = self.generate_hash_chain_key_pair(private_seed)
         elif key_data:
-            self.private_key, self.public_key = self.import_key_pair(key_data)
+            self.private_key, self.public_key = self._import_key_pair(key_data)
             self.rng_secret = None
+        elif hash_function:
+            self.RNG=RNG
+            self.private_key, self.public_key, self.rng_secret = self.generate_hash_chain_key_pair(
+                hash_fn_name=hash_function, hash_fn_length=hash_fn_length,preserve_secrets=True)
         else:
             if not RNG:
                 raise TypeError("A random-number generator function must be provided " + \
@@ -61,7 +65,7 @@ class Keypair():
             else:
                 # Default behaviour without arguments.
                 self.private_key, self.public_key, self.rng_secret = self.generate_hash_chain_key_pair(
-                    preserve_secrets=True)
+                    hash_fn_name="sha512", hash_fn_length=512, preserve_secrets=True)
 
     def _build_public_key(self, private_key=None, hash_fn_name=None):
         'Takes a list of value-pairs (lists or tuples), returns hash-pairs.'
@@ -76,7 +80,7 @@ class Keypair():
             new_pubkey.append(hash_pair(private_pair))
         return new_pubkey
 
-    def generate_hash_chain_key_pair(self, secret_seeds=None, hash_fn_name="sha512", hash_fn_length=512,
+    def generate_hash_chain_key_pair(self, secret_seeds=None, hash_fn_name=None, hash_fn_length=None,
                                      preserve_secrets=False):
 
         # Generate a pair of large seeds for use in generating the private key hash-chain.
@@ -117,11 +121,11 @@ class Keypair():
         export_seed = []
         unit0 = self._bin_b64str(self.rng_secret[0])
         unit1 = self._bin_b64str(self.rng_secret[1])
-        export_seed.append([unit0,unit1])
+        export_seed.append([unit0, unit1])
         return export_seed
 
-    def import_seed_only(self, jsonFile):
-        with open(jsonFile,'r') as data:
+    def _import_seed_only(self, jsonFile):
+        with open(jsonFile, 'r') as data:
             secret_seed = json.load(data)
         key_seed = []
         unit0 = self._b64str_bin(secret_seed['seed'][0])
@@ -133,7 +137,7 @@ class Keypair():
         with open(file, 'w') as jsonFile:
             json.dump({'seed': self._exportable_seed()}, jsonFile, indent=2)
 
-    def import_key_pair(self, jsonFile):
+    def _import_key_pair(self, jsonFile):
         def parse_key(key):
             key_bin = []
             for unit_pair in key:
@@ -142,7 +146,7 @@ class Keypair():
                 key_bin.append([unit0, unit1])
             return key_bin
 
-        with open(jsonFile,'r') as data:
+        with open(jsonFile, 'r') as data:
             key_pair = json.load(data)
 
         return parse_key(key_pair[0]['pub']), parse_key(key_pair[1]['priv'])
@@ -167,12 +171,12 @@ class Keypair():
             json.dump(make_list(), jsonFile, indent=2)
 
 
-def main():
-    kluc = Keypair(RNG=RNG)
+def test():
+    kluc = Keypair(RNG=RNG,hash_function="sha256",hash_fn_length=256)
     kluc.export_key_pair('keys.json')
     kluc.export_seed_only("seed.json")
-    privatekey, publickey = kluc.import_key_pair('keys.json')
+    privatekey, publickey = kluc._import_key_pair('keys.json')
 
 
 if __name__ == '__main__':
-    main()
+    test()

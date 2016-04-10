@@ -24,13 +24,14 @@ from utils.hbss_utills import bit_hash, hash_function_digest
 
 
 class Signer():
-    def __init__(self, keypair):
+    def __init__(self, keypair, hash_fn_name):
         self.keypair = keypair
         if not self.keypair.private_key:
             raise ValueError("Specified key has no private part; cannot sign!")
+        self.hash_fn_name = hash_fn_name
 
     def generate_signature(self, message):
-        bithash = bit_hash(hash_function_digest(message, hash_fn_name="sha512"))
+        bithash = bit_hash(hash_function_digest(message, self.hash_fn_name))
         Revealed_Numbers = []
         counter = 0
         for bit in bithash:
@@ -45,18 +46,36 @@ class Signer():
             exportable_signature.append(str(base64.b64encode(bytes(unit)), encoding='utf-8'))
         return exportable_signature
 
-    def export_signature(self, message, file):
+    def export_signature(self, signature, file):
         export_list = []
-        export_list.append({'sig': self._format_signature(self.generate_signature(message))})
+        export_list.append({'sig': self._format_signature(signature)})
 
         with open(file, 'w') as jsonFile:
             json.dump(export_list, jsonFile, indent=2)
 
+    def import_signature(self,signature):
+        import_list = []
+        for unit in signature[0]['sig']:
+            import_list.append(base64.b64decode(bytes(unit, 'utf-8')))
+        return import_list
+
+    def load_signature(self,file):
+        with open(file, 'r') as data:
+            signature = json.load(data)
+
+        return signature
+
 
 def test():
-    key_pair = keys_generation.Keypair(RNG=RNG, hash_function="sha256", hash_fn_length=256)
-    Signer(key_pair).export_signature('jano'.encode('utf-8'), 'signature.json')
-
+    key_pair = keys_generation.Keypair(RNG=RNG,hash_function="sha256", hash_fn_length=256)
+    # key_pair = keys_generation.Keypair(RNG=RNG)
+    sign = Signer(key_pair,"sha256")
+    signature =sign.generate_signature("jano".encode('utf-8'))
+    print(signature)
+    sign.export_signature(signature,"signature.json")
+    tmp = sign.load_signature("signature.json")
+    formatS = sign.import_signature(tmp)
+    print(formatS)
 
 if __name__ == '__main__':
     test()
