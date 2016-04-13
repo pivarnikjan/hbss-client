@@ -1,4 +1,4 @@
-# TODO CELE PREROBIT
+# TODO doplnit komentare jednotlivych tried a metod
 """
     Implementation of the Quantum-Computer-Resistant Lamport Signature scheme in Python 3
     Copyright (C) 2013  Cathal Garvey
@@ -47,12 +47,12 @@ class Verifier():
         return True
 
 def test():
-    key_pair = keys_generation.Keypair(RNG=RNG,hash_function="sha256", hash_fn_length=256)
-    sig = signature.Signer(key_pair,"sha256")
+    key_pair = keys_generation.Keypair(RNG=RNG, hash_function="sha256", hash_fn_length=256)
+    sig = signature.Signer(key_pair, "sha256")
     exp_sig = sig.generate_signature('jano'.encode('utf-8'))
-    sig.export_signature(exp_sig,'sig.json')
+    sig.export_signature(exp_sig, 'sig.json')
     vrfy_sig = sig.import_signature(sig.load_signature('sig.json'))
-    vrfy = Verifier(key_pair,"sha256").verify_signature(vrfy_sig,"jano".encode('utf-8'))
+    vrfy = Verifier(key_pair, "sha256").verify_signature(vrfy_sig, "jano".encode('utf-8'))
     print(vrfy)
 
 

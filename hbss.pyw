@@ -5,7 +5,7 @@ from hashlib import sha512
 
 from PyQt4.QtGui import *
 
-import merkle
+import merkle_old
 from utils import hbss_utills
 
 
@@ -47,7 +47,7 @@ class QuantumSignatureGUI(QMainWindow):
 
         hashFromFile = hbss_utills.calculate_hash_from_file(open(fname, 'rb'), sha512())
 
-        mytree = merkle.MerkleTree(4)
+        mytree = merkle_old.MerkleTree(4)
         publicKey = str(base64.b64encode(mytree.tree_public_key()),'utf-8')
         dictofPK = {}
         dictofPK["public_key: "] = publicKey

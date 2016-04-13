@@ -1,3 +1,5 @@
+# TODO doplnit komentare jednotlivych tried a metod
+# TODO zistit ako zapisat do certifikatu, ze som to rozsiroval
 """
     Implementation of the Quantum-Computer-Resistant Lamport Signature scheme in Python 3
     Copyright (C) 2013  Cathal Garvey
@@ -38,8 +40,11 @@ class Keypair():
         'Shorthand: Restores bytes data from b64-encoded strings.'
         return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
-    def __init__(self, private_seed=None, key_data=None, RNG=None, hash_function=None, hash_fn_length=None,
+    def __init__(self, private_seed=None, key_data=None, RNG=None, hash_function="sha512", hash_fn_length=512,
                  all_RNG=False):
+
+        self.hash_fn_name = hash_function
+        self.hash_fn_length = hash_fn_length
 
         if private_seed:
             private_seed = self._import_seed_only(private_seed)
@@ -48,9 +53,9 @@ class Keypair():
             self.private_key, self.public_key = self._import_key_pair(key_data)
             self.rng_secret = None
         elif hash_function:
-            self.RNG=RNG
+            self.RNG = RNG
             self.private_key, self.public_key, self.rng_secret = self.generate_hash_chain_key_pair(
-                hash_fn_name=hash_function, hash_fn_length=hash_fn_length,preserve_secrets=True)
+                preserve_secrets=True)
         else:
             if not RNG:
                 raise TypeError("A random-number generator function must be provided " + \
@@ -65,33 +70,32 @@ class Keypair():
             else:
                 # Default behaviour without arguments.
                 self.private_key, self.public_key, self.rng_secret = self.generate_hash_chain_key_pair(
-                    hash_fn_name="sha512", hash_fn_length=512, preserve_secrets=True)
+                    preserve_secrets=True)
 
-    def _build_public_key(self, private_key=None, hash_fn_name=None):
+    def _build_public_key(self, private_key=None):
         'Takes a list of value-pairs (lists or tuples), returns hash-pairs.'
         if not private_key:
             private_key = self.private_key
 
         def hash_pair(pair):
-            return [hash_function_digest(pair[0], hash_fn_name), hash_function_digest(pair[1], hash_fn_name)]
+            return [hash_function_digest(pair[0], self.hash_fn_name), hash_function_digest(pair[1], self.hash_fn_name)]
 
         new_pubkey = []
         for private_pair in private_key:
             new_pubkey.append(hash_pair(private_pair))
         return new_pubkey
 
-    def generate_hash_chain_key_pair(self, secret_seeds=None, hash_fn_name=None, hash_fn_length=None,
-                                     preserve_secrets=False):
+    def generate_hash_chain_key_pair(self, secret_seeds=None, preserve_secrets=False):
 
         # Generate a pair of large seeds for use in generating the private key hash-chain.
         if secret_seeds is None:
             secret_seeds = [self.RNG(1024), self.RNG(1024)]
         private_key = []
 
-        prior_hashes = [hash_function_digest(pos, hash_fn_name) for pos in secret_seeds]
-        for i in range(0, hash_fn_length):
+        prior_hashes = [hash_function_digest(pos, self.hash_fn_name) for pos in secret_seeds]
+        for i in range(0, self.hash_fn_length):
             # Make new hash functions
-            new_hashes = [hash_function(hash_fn_name), hash_function(hash_fn_name)]
+            new_hashes = [hash_function(self.hash_fn_name), hash_function(self.hash_fn_name)]
             # Make room for the digests to be added to private_key
             append_hashes = []
             for i in range(0, 2):
@@ -108,7 +112,7 @@ class Keypair():
             # Add the two new secret-salted hash-chain hashes to key list
             private_key.append(append_hashes)
         # Derive pubkey from private key
-        public_key = self._build_public_key(private_key, hash_fn_name)
+        public_key = self._build_public_key(private_key)
 
         if preserve_secrets:
             return private_key, public_key, secret_seeds
@@ -116,13 +120,6 @@ class Keypair():
             # delete our secrets
             del (secret_seeds)
             return private_key, public_key, None
-
-    def _exportable_seed(self):
-        export_seed = []
-        unit0 = self._bin_b64str(self.rng_secret[0])
-        unit1 = self._bin_b64str(self.rng_secret[1])
-        export_seed.append([unit0, unit1])
-        return export_seed
 
     def _import_seed_only(self, jsonFile):
         with open(jsonFile, 'r') as data:
@@ -132,6 +129,13 @@ class Keypair():
         unit1 = self._b64str_bin(secret_seed['seed'][1])
         key_seed.append([unit0, unit1])
         return key_seed
+
+    def _exportable_seed(self):
+        export_seed = []
+        unit0 = self._bin_b64str(self.rng_secret[0])
+        unit1 = self._bin_b64str(self.rng_secret[1])
+        export_seed.append([unit0, unit1])
+        return export_seed
 
     def export_seed_only(self, file):
         with open(file, 'w') as jsonFile:
@@ -164,7 +168,7 @@ class Keypair():
             export_list = []
             export_list.append({'pub': self._exportable_key(self.public_key)})
             export_list.append({'priv': self._exportable_key(self.private_key)})
-            export_list.append({'seed': self._exportable_seed()})
+            # export_list.append({'seed': self._exportable_seed()})
             return export_list
 
         with open(file, 'w') as jsonFile:
@@ -172,7 +176,8 @@ class Keypair():
 
 
 def test():
-    kluc = Keypair(RNG=RNG,hash_function="sha256",hash_fn_length=256)
+    kluc = Keypair(RNG=RNG, hash_function="sha256", hash_fn_length=256)
+    # kluc = Keypair(RNG=RNG)
     kluc.export_key_pair('keys.json')
     kluc.export_seed_only("seed.json")
     privatekey, publickey = kluc._import_key_pair('keys.json')

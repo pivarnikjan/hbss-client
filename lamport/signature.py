@@ -1,3 +1,5 @@
+# TODO doplnit komentare jednotlivych tried a metod
+
 """
     Implementation of the Quantum-Computer-Resistant Lamport Signature scheme in Python 3
     Copyright (C) 2013  Cathal Garvey
@@ -53,13 +55,13 @@ class Signer():
         with open(file, 'w') as jsonFile:
             json.dump(export_list, jsonFile, indent=2)
 
-    def import_signature(self,signature):
+    def import_signature(self, signature):
         import_list = []
         for unit in signature[0]['sig']:
             import_list.append(base64.b64decode(bytes(unit, 'utf-8')))
         return import_list
 
-    def load_signature(self,file):
+    def load_signature(self, file):
         with open(file, 'r') as data:
             signature = json.load(data)
 
@@ -67,15 +69,16 @@ class Signer():
 
 
 def test():
-    key_pair = keys_generation.Keypair(RNG=RNG,hash_function="sha256", hash_fn_length=256)
+    key_pair = keys_generation.Keypair(RNG=RNG, hash_function="sha256", hash_fn_length=256)
     # key_pair = keys_generation.Keypair(RNG=RNG)
-    sign = Signer(key_pair,"sha256")
-    signature =sign.generate_signature("jano".encode('utf-8'))
+    sign = Signer(key_pair, "sha256")
+    signature = sign.generate_signature("jano".encode('utf-8'))
     print(signature)
-    sign.export_signature(signature,"signature.json")
+    sign.export_signature(signature, "signature.json")
     tmp = sign.load_signature("signature.json")
     formatS = sign.import_signature(tmp)
     print(formatS)
+
 
 if __name__ == '__main__':
     test()
