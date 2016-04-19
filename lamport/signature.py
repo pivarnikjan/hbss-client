@@ -25,7 +25,7 @@ from lamport import keys_generation
 from utils.hbss_utills import bit_hash, hash_function_digest
 
 
-class Signer():
+class Signer:
     def __init__(self, keypair, hash_fn_name):
         self.keypair = keypair
         if not self.keypair.private_key:

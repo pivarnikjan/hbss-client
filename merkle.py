@@ -18,6 +18,8 @@
 """
 
 import base64
+import json
+from hashlib import sha256
 from ssl import RAND_bytes as RNG
 from utils.hbss_utills import hash_function_digest
 
@@ -51,11 +53,14 @@ class MerkleTree:
         if not existing_tree:
             self._generate_hashchain_keypairs(merkle_tree_height)
             self.generate_tree()
+        else:
+            self.import_tree(existing_tree)
+            self.verify_tree()
 
     def tree_node_hash(self, public_key, b64=False):
         # TODO figure out how to obtain public key
         flattened_pubkey = b''.join([b''.join(unitpair) for unitpair in public_key])
-        merkle_node_hash = hash_function_digest(flattened_pubkey, self.hash_fn_name), self.hash_fn_name
+        merkle_node_hash = hash_function_digest(flattened_pubkey, self.hash_fn_name)
         if b64:
             merkle_node_hash = self._bin_b64str(merkle_node_hash)
         return merkle_node_hash
@@ -65,15 +70,14 @@ class MerkleTree:
 
         while keynum > 0:
             keynum -= 1
-            newkey = lamport.keys_generation.Keypair(RNG=RNG)
-            key_seed = newkey._exportable_seed()
-            self.private_keyring.append(key_seed)
+            newkey = lamport.keys_generation.Keypair(RNG=RNG, hash_function=self.hash_fn_name)
+            # key_seed = newkey._exportable_seed()
+            self.private_keyring.append(newkey.rng_secret)
             self.public_keyring.append(self.tree_node_hash(newkey.public_key))
             self.hash_tree[0].append(self.tree_node_hash(newkey.public_key))
 
     def generate_tree(self):
-        'Uses initial leaf values to populate hash-tree.'
-        # Below: While the length of the last item in the hash tree is greater than 1 (i.e. not root)
+        'Uses initial leaf values to populate hash-tree.'  # Below: While the length of the last item in the hash tree is greater than 1 (i.e. not root)
         while len(self.hash_tree[len(self.hash_tree) - 1]) > 1:
             # Immediately create new empty list for new values.
             self.hash_tree.append([])
@@ -102,14 +106,13 @@ class MerkleTree:
 
     def tree_public_key(self):
         'Returns the root node as a base-64 encoded string.'
-        return self.root_hash()[0]
+        return self._b64str_bin(self.root_hash())
 
     def root_hash(self):
         'Returns the root node as binary.'
         return self.hash_tree[len(self.hash_tree) - 1]
 
     def get_node_path(self, leaf_hash, cue_pairs=False, verify_nodes=True):
-
         if leaf_hash not in self.hash_tree[0]:
             raise KeyManagementError("Specified leaf_hash not in leaves" + \
                                      " of Merkle Tree. Hash requested was: " + \
@@ -143,7 +146,6 @@ class MerkleTree:
         return node_list
 
     def mark_key_used(self, leaf_hash, delete_private=True):
-
         if leaf_hash not in self.used_keys:
             self.used_keys.append(leaf_hash)
 
@@ -154,7 +156,6 @@ class MerkleTree:
             return False
 
     def select_unused_key(self, mark_used=True, force=False):
-
         if len(self.used_keys) == len(self.hash_tree[0]) - 1:
             if not force:
                 print("Only one key remains; you should use this key " + \
@@ -169,6 +170,7 @@ class MerkleTree:
         while self._is_used(self.hash_tree[0][counter]):
             counter += 1
         private_key = self.private_keyring[counter]
+        print(private_key)
         if private_key is None:
             raise KeyManagementError(
                 "Selected 'unused' key appears to have been used.")
@@ -181,34 +183,47 @@ class MerkleTree:
                   keypair, "..an error occurred:", e, sep="\r\n")
         # Check key to make sure it matches its leaf hash:
         try:
-            assert (self.tree_node_hash() == self.hash_tree[0][counter])
+            assert (self.tree_node_hash(keypair.public_key) == self.hash_tree[0][counter])
         except AssertionError:
             raise KeyManagementError("Tree leaf node does not match keypair hash generated on-the-fly.")
         if mark_used:
             # Don't just mark it used, delete the key so it can't be used
             # again by accident!
-            self.mark_key_used(self.tree_node_hash())
+            self.mark_key_used(self.tree_node_hash(keypair.public_key))
             self.private_keyring[counter] = None
         return keypair
 
-    def _sign_message(self, message, include_nodes=True,
-                      include_pubkey=True, mark_used=True,
-                      force_sign=False):
-
+    def _sign_message(self, message, include_nodes=True, include_pubkey=True, force_sign=False):
         KeyToUse = self.select_unused_key(mark_used=True, force=force_sign)
         signer = lamport.signature.Signer(KeyToUse, self.hash_fn_name)
 
-        signature = {}
-        signature["lamport_signature"] = signer.generate_signature(message)
-        signature["lamport_verification_key"] = KeyToUse._exportable_key()
-        signature["path"] = self.get_node_path(self.tree_node_hash(KeyToUse.public_key))
-        return signature
+        # signature = {}
+        # signature["sig"] = signer.generate_signature(message)
+        # signature["vrfy"] = KeyToUse.export_public_key()
+        # signature["pub"] = KeyToUse._exportable_key(self.tree_public_key())
+        # signature["path"] = self.get_node_path(self.tree_node_hash(KeyToUse.public_key))
+        # return signature
 
     def _vrfy_message(self):
         pass
 
+    def import_tree(self, tree):
+        pass
+
+    def verify_tree(self):
+        pass
+
+
 def test():
-    pass
+    tree = MerkleTree(2, hash_fn_name='sha256')
+
+    key = tree.select_unused_key(mark_used=True, force=False)
+
+    # mysig = tree._sign_message("jano".encode('utf-8'))
+    # print(mysig)
+
+    # with open("signature.sig", mode='w') as SigOut:
+    #     SigOut.write(json.dumps(mysig, indent=2))
 
 
 if __name__ == '__main__':

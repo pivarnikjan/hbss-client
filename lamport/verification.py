@@ -22,7 +22,7 @@ from utils.hbss_utills import bit_hash, hash_function_digest
 from lamport import keys_generation, signature
 
 
-class Verifier():
+class Verifier:
     def __init__(self, keypair, hash_fn_name):
         self.keypair = keypair
         if not self.keypair.public_key:

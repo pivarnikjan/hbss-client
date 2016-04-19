@@ -47,7 +47,7 @@ class Keypair():
         self.hash_fn_length = hash_fn_length
 
         if private_seed:
-            private_seed = self._import_seed_only(private_seed)
+            private_seed = private_seed
             self.private_key, self.public_key, self.rng_secret = self.generate_hash_chain_key_pair(private_seed)
         elif key_data:
             self.private_key, self.public_key = self._import_key_pair(key_data)
@@ -121,7 +121,7 @@ class Keypair():
             del (secret_seeds)
             return private_key, public_key, None
 
-    def _import_seed_only(self, jsonFile):
+    def _import_seed_from_file(self, jsonFile):
         with open(jsonFile, 'r') as data:
             secret_seed = json.load(data)
         key_seed = []
@@ -163,16 +163,17 @@ class Keypair():
             export_key.append([unit0, unit1])
         return export_key
 
+    def export_public_key(self):
+        return self._exportable_key(self.public_key)
+
     def export_key_pair(self, file):
-        def make_list():
-            export_list = []
-            export_list.append({'pub': self._exportable_key(self.public_key)})
-            export_list.append({'priv': self._exportable_key(self.private_key)})
-            # export_list.append({'seed': self._exportable_seed()})
-            return export_list
+        export_list = []
+        export_list.append({'pub': self._exportable_key(self.public_key)})
+        export_list.append({'priv': self._exportable_key(self.private_key)})
+        # export_list.append({'seed': self._exportable_seed()})
 
         with open(file, 'w') as jsonFile:
-            json.dump(make_list(), jsonFile, indent=2)
+            json.dump(export_list, jsonFile, indent=2)
 
 
 def test():
