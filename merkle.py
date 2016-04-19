@@ -39,27 +39,37 @@ class MerkleTree:
         'Restores bytes data from b64-encoded strings.'
         return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
-    def __init__(self, keynum=128, ExistingTree=None, hash_fn_name="sha512", hash_fn_length=512):
+    def __init__(self, merkle_tree_height=3, existing_tree=None, hash_fn_name="sha512"):
         self.private_keyring = []
         self.public_keyring = []
         self.public_hash = []
         self.hash_tree = [[]]
         self.used_keys = []
+        self.signatures = []
         self.hash_fn_name = hash_fn_name
-        self.hash_fn_length = hash_fn_length
 
-        if not ExistingTree:
-            self._generate_hashchain_keypairs(keynum)
+        if not existing_tree:
+            self._generate_hashchain_keypairs(merkle_tree_height)
             self.generate_tree()
 
-    def _generate_hashchain_keypairs(self, keynum):
+    def tree_node_hash(self, public_key, b64=False):
+        # TODO figure out how to obtain public key
+        flattened_pubkey = b''.join([b''.join(unitpair) for unitpair in public_key])
+        merkle_node_hash = hash_function_digest(flattened_pubkey, self.hash_fn_name), self.hash_fn_name
+        if b64:
+            merkle_node_hash = self._bin_b64str(merkle_node_hash)
+        return merkle_node_hash
+
+    def _generate_hashchain_keypairs(self, merkle_tree_height):
+        keynum = 2 ** merkle_tree_height
+
         while keynum > 0:
             keynum -= 1
             newkey = lamport.keys_generation.Keypair(RNG=RNG)
             key_seed = newkey._exportable_seed()
             self.private_keyring.append(key_seed)
-            self.public_keyring.append(self.tree_node_hash())
-            self.hash_tree[0].append(self.tree_node_hash())
+            self.public_keyring.append(self.tree_node_hash(newkey.public_key))
+            self.hash_tree[0].append(self.tree_node_hash(newkey.public_key))
 
     def generate_tree(self):
         'Uses initial leaf values to populate hash-tree.'
@@ -81,14 +91,6 @@ class MerkleTree:
                 # Embed new hash "above" constitutent hashes in new layer:
                 self.hash_tree[tree_depth].append(new_node_hash)
 
-    def tree_node_hash(self, b64=False):
-        # TODO figure out how to obtain public key
-        flattened_pubkey = b''.join([b''.join(unitpair) for unitpair in self.public_key])
-        merkle_node_hash = hash_function_digest(flattened_pubkey), self.hash_fn_name
-        if b64:
-            merkle_node_hash = self._bin_b64str(merkle_node_hash)
-        return merkle_node_hash
-
     def _exportable_tree(self):
         exportable_tree = []
         for layer in self.hash_tree:
@@ -100,24 +102,11 @@ class MerkleTree:
 
     def tree_public_key(self):
         'Returns the root node as a base-64 encoded string.'
-        return (self.root_hash()[0])
+        return self.root_hash()[0]
 
     def root_hash(self):
         'Returns the root node as binary.'
         return self.hash_tree[len(self.hash_tree) - 1]
-
-    def _sign_message(self, message, include_nodes=True,
-                      include_pubkey=True, mark_used=True,
-                      force_sign=False):
-
-        KeyToUse = self.select_unused_key(mark_used=True, force=force_sign)
-        signer = lamport.signature.Signer(KeyToUse)
-
-        signature = {}
-        signature["lamport_signature"] = signer.generate_signature(message)
-        signature["lamport_verification_key"] = KeyToUse._exportable_key()
-        signature["path"] = self.get_node_path(self.tree_node_hash())
-        return signature
 
     def get_node_path(self, leaf_hash, cue_pairs=False, verify_nodes=True):
 
@@ -152,6 +141,17 @@ class MerkleTree:
             pass
             # if not self.derive_root()
         return node_list
+
+    def mark_key_used(self, leaf_hash, delete_private=True):
+
+        if leaf_hash not in self.used_keys:
+            self.used_keys.append(leaf_hash)
+
+    def _is_used(self, leaf_hash):
+        if leaf_hash in self.used_keys:
+            return True
+        else:
+            return False
 
     def select_unused_key(self, mark_used=True, force=False):
 
@@ -191,17 +191,21 @@ class MerkleTree:
             self.private_keyring[counter] = None
         return keypair
 
-    def mark_key_used(self, leaf_hash, delete_private=True):
+    def _sign_message(self, message, include_nodes=True,
+                      include_pubkey=True, mark_used=True,
+                      force_sign=False):
 
-        if leaf_hash not in self.used_keys:
-            self.used_keys.append(leaf_hash)
+        KeyToUse = self.select_unused_key(mark_used=True, force=force_sign)
+        signer = lamport.signature.Signer(KeyToUse, self.hash_fn_name)
 
-    def _is_used(self, leaf_hash):
-        if leaf_hash in self.used_keys:
-            return True
-        else:
-            return False
+        signature = {}
+        signature["lamport_signature"] = signer.generate_signature(message)
+        signature["lamport_verification_key"] = KeyToUse._exportable_key()
+        signature["path"] = self.get_node_path(self.tree_node_hash(KeyToUse.public_key))
+        return signature
 
+    def _vrfy_message(self):
+        pass
 
 def test():
     pass
