@@ -47,7 +47,7 @@ class Verifier:
         return True
 
 def test():
-    key_pair = keys_generation.Keypair(RNG=RNG, hash_function="sha256", hash_fn_length=256)
+    key_pair = keys_generation.Keypair(RNG=RNG, hash_function=["sha256", 256])
     sig = signature.Signer(key_pair, "sha256")
     exp_sig = sig.generate_signature('jano'.encode('utf-8'))
     sig.export_signature(exp_sig, 'sig.json')

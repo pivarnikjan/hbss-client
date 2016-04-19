@@ -41,14 +41,15 @@ class MerkleTree:
         'Restores bytes data from b64-encoded strings.'
         return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
-    def __init__(self, merkle_tree_height=3, existing_tree=None, hash_fn_name="sha512"):
+    def __init__(self, merkle_tree_height=3, existing_tree=None, hash_function=None):
         self.private_keyring = []
         self.public_keyring = []
         self.public_hash = []
         self.hash_tree = [[]]
         self.used_keys = []
         self.signatures = []
-        self.hash_fn_name = hash_fn_name
+        self.hash_fn_name = hash_function[0]
+        self.hash_fn_length = hash_function[1]
 
         if not existing_tree:
             self._generate_hashchain_keypairs(merkle_tree_height)
@@ -58,7 +59,6 @@ class MerkleTree:
             self.verify_tree()
 
     def tree_node_hash(self, public_key, b64=False):
-        # TODO figure out how to obtain public key
         flattened_pubkey = b''.join([b''.join(unitpair) for unitpair in public_key])
         merkle_node_hash = hash_function_digest(flattened_pubkey, self.hash_fn_name)
         if b64:
@@ -70,7 +70,7 @@ class MerkleTree:
 
         while keynum > 0:
             keynum -= 1
-            newkey = lamport.keys_generation.Keypair(RNG=RNG, hash_function=self.hash_fn_name)
+            newkey = lamport.keys_generation.Keypair(RNG=RNG, hash_function=[self.hash_fn_name, self.hash_fn_length])
             # key_seed = newkey._exportable_seed()
             self.private_keyring.append(newkey.rng_secret)
             self.public_keyring.append(self.tree_node_hash(newkey.public_key))
@@ -104,13 +104,9 @@ class MerkleTree:
                 exportable_tree[len(exportable_tree) - 1].append(b64_str_hash)
         return exportable_tree
 
-    def tree_public_key(self):
-        'Returns the root node as a base-64 encoded string.'
-        return self._b64str_bin(self.root_hash())
-
     def root_hash(self):
         'Returns the root node as binary.'
-        return self.hash_tree[len(self.hash_tree) - 1]
+        return self._bin_b64str(self.hash_tree[- 1][0])
 
     def get_node_path(self, leaf_hash, cue_pairs=False, verify_nodes=True):
         if leaf_hash not in self.hash_tree[0]:
@@ -170,13 +166,14 @@ class MerkleTree:
         while self._is_used(self.hash_tree[0][counter]):
             counter += 1
         private_key = self.private_keyring[counter]
-        print(private_key)
+
         if private_key is None:
             raise KeyManagementError(
                 "Selected 'unused' key appears to have been used.")
         # Import key as a lamport Keypair.
         try:
-            keypair = lamport.keys_generation.Keypair(private_seed=private_key)
+            keypair = lamport.keys_generation.Keypair(private_seed=private_key,
+                                                      hash_function=[self.hash_fn_name, self.hash_fn_length])
 
         except IndexError as e:
             print("While attempting to create a keypair with the following:",
@@ -197,12 +194,13 @@ class MerkleTree:
         KeyToUse = self.select_unused_key(mark_used=True, force=force_sign)
         signer = lamport.signature.Signer(KeyToUse, self.hash_fn_name)
 
-        # signature = {}
-        # signature["sig"] = signer.generate_signature(message)
-        # signature["vrfy"] = KeyToUse.export_public_key()
-        # signature["pub"] = KeyToUse._exportable_key(self.tree_public_key())
-        # signature["path"] = self.get_node_path(self.tree_node_hash(KeyToUse.public_key))
-        # return signature
+        signature = {}
+        podpis = signer.generate_signature(message)
+        signature["sig"] = signer._format_signature(podpis)
+        signature["vrfy"] = KeyToUse.export_public_key()
+        signature["pub"] = self.root_hash()
+        signature["path"] = self.get_node_path(self.tree_node_hash(KeyToUse.public_key))
+        return signature
 
     def _vrfy_message(self):
         pass
@@ -215,15 +213,15 @@ class MerkleTree:
 
 
 def test():
-    tree = MerkleTree(2, hash_fn_name='sha256')
+    tree = MerkleTree(2, hash_function=["sha256", 256])
 
     key = tree.select_unused_key(mark_used=True, force=False)
+    mysig = tree._sign_message("jano".encode('utf-8'))
+    # print(tree.root_hash())
+    # print(base64.b64encode(tree.tree_public_key()))
 
-    # mysig = tree._sign_message("jano".encode('utf-8'))
-    # print(mysig)
-
-    # with open("signature.sig", mode='w') as SigOut:
-    #     SigOut.write(json.dumps(mysig, indent=2))
+    with open("signature.sig", mode='w') as SigOut:
+        SigOut.write(json.dumps(mysig, indent=2))
 
 
 if __name__ == '__main__':

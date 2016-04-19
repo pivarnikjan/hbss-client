@@ -69,15 +69,14 @@ class Signer:
 
 
 def test():
-    key_pair = keys_generation.Keypair(RNG=RNG, hash_function="sha256", hash_fn_length=256)
+    key_pair = keys_generation.Keypair(RNG=RNG, hash_function=["sha256", 256])
     # key_pair = keys_generation.Keypair(RNG=RNG)
     sign = Signer(key_pair, "sha256")
     signature = sign.generate_signature("jano".encode('utf-8'))
-    print(signature)
+
     sign.export_signature(signature, "signature.json")
     tmp = sign.load_signature("signature.json")
     formatS = sign.import_signature(tmp)
-    print(formatS)
 
 
 if __name__ == '__main__':

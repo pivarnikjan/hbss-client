@@ -40,11 +40,11 @@ class Keypair():
         'Shorthand: Restores bytes data from b64-encoded strings.'
         return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
-    def __init__(self, private_seed=None, key_data=None, RNG=None, hash_function="sha512", hash_fn_length=512,
+    def __init__(self, private_seed=None, key_data=None, RNG=None, hash_function=None,
                  all_RNG=False):
 
-        self.hash_fn_name = hash_function
-        self.hash_fn_length = hash_fn_length
+        self.hash_fn_name = hash_function[0]
+        self.hash_fn_length = hash_function[1]
 
         if private_seed:
             private_seed = private_seed
@@ -177,12 +177,11 @@ class Keypair():
 
 
 def test():
-    kluc = Keypair(RNG=RNG, hash_function="sha256", hash_fn_length=256)
+    kluc = Keypair(RNG=RNG, hash_function=["sha256", 256])
     # kluc = Keypair(RNG=RNG)
     kluc.export_key_pair('keys.json')
     kluc.export_seed_only("seed.json")
-    privatekey, publickey = kluc._import_key_pair('keys.json')
-
+    # privatekey, publickey = kluc._import_key_pair('keys.json')
 
 if __name__ == '__main__':
     test()
