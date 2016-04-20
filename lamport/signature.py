@@ -48,6 +48,7 @@ class Signer:
             exportable_signature.append(str(base64.b64encode(bytes(unit)), encoding='utf-8'))
         return exportable_signature
 
+    # TODO: ZMAZAT zbytocna funkcia
     def export_signature(self, signature, file):
         export_list = []
         export_list.append({'sig': self._format_signature(signature)})
@@ -55,12 +56,14 @@ class Signer:
         with open(file, 'w') as jsonFile:
             json.dump(export_list, jsonFile, indent=2)
 
+    # TODO prehodit inam
     def import_signature(self, signature):
         import_list = []
         for unit in signature[0]['sig']:
             import_list.append(base64.b64decode(bytes(unit, 'utf-8')))
         return import_list
 
+    # TODO zbytocna funkcia? opakuje funkcionalitu
     def load_signature(self, file):
         with open(file, 'r') as data:
             signature = json.load(data)
@@ -77,7 +80,7 @@ def test():
     sign.export_signature(signature, "signature.json")
     tmp = sign.load_signature("signature.json")
     formatS = sign.import_signature(tmp)
-
+    print(formatS)
 
 if __name__ == '__main__':
     test()

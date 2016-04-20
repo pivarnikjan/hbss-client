@@ -51,6 +51,7 @@ def test():
     sig = signature.Signer(key_pair, "sha256")
     exp_sig = sig.generate_signature('jano'.encode('utf-8'))
     sig.export_signature(exp_sig, 'sig.json')
+
     vrfy_sig = sig.import_signature(sig.load_signature('sig.json'))
     vrfy = Verifier(key_pair, "sha256").verify_signature(vrfy_sig, "jano".encode('utf-8'))
     print(vrfy)

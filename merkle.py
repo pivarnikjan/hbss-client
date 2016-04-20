@@ -202,8 +202,20 @@ class MerkleTree:
         signature["path"] = self.get_node_path(self.tree_node_hash(KeyToUse.public_key))
         return signature
 
-    def _vrfy_message(self):
-        pass
+    def _vrfy_message(self, key, signature_file, message):
+        import_list = []
+        with open(signature_file, 'r') as json_file:
+            signature = json.load(json_file)
+        sig = signature['sig']
+        for unit in sig:
+            import_list.append(base64.b64decode(bytes(unit, 'utf-8')))
+        print(import_list)
+        print(lamport.verification.Verifier(key, self.hash_fn_name).verify_signature(import_list, message))
+
+        # for unit in signature.get('sig'):
+        # print(signature['sig'])
+        # print(len(unit))
+        # print(signature.get('vrfy'))
 
     def import_tree(self, tree):
         pass
@@ -217,6 +229,8 @@ def test():
 
     key = tree.select_unused_key(mark_used=True, force=False)
     mysig = tree._sign_message("jano".encode('utf-8'))
+
+    tree._vrfy_message(key, "signature.sig", "jano".encode('utf-8'))
     # print(tree.root_hash())
     # print(base64.b64encode(tree.tree_public_key()))
 
