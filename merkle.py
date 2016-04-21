@@ -215,7 +215,7 @@ class MerkleTree:
         result = hash0
 
         for i in range(len(path)):
-            result = self.tree_node_hash([result, path[i]], b64=True)
+            result = self.tree_node_hash([result, path[i]])
         if self.root_hash() == result:
             return True
 
@@ -230,12 +230,23 @@ class MerkleTree:
         vrfy = signature['vrfy']
         path = signature['path']
 
-        if not self._verify_key_pair(key, sig, message):
-            return False
-        elif not self._verify_public_key(self.tree_node_hash(vrfy, b64=True), path):
-            return False
-        else:
-            return True
+        list_vr = []
+        for tmp in vrfy:
+            list_vr.append(base64.b64decode(tmp[0]))
+            list_vr.append(base64.b64decode(tmp[1]))
+
+        tmp = b''.join(list_vr)
+        print(base64.b64encode(tmp))
+        digest = hash_function_digest(tmp, self.hash_fn_name)
+        print(base64.b64encode(digest))
+
+
+        # if not self._verify_key_pair(key, sig, message):
+        #     return False
+        # elif not self._verify_public_key(self.tree_node_hash(vrfy, b64=True), path):
+        #     return False
+        # else:
+        #     return True
 
     def import_tree(self, tree):
         pass
