@@ -141,6 +141,7 @@ class Keypair():
         with open(file, 'w') as jsonFile:
             json.dump({'seed': self._exportable_seed()}, jsonFile, indent=2)
 
+    # TODO: refactor import key_pair
     def _import_key_pair(self, jsonFile):
         def parse_key(key):
             key_bin = []
@@ -181,7 +182,6 @@ def test():
     # kluc = Keypair(RNG=RNG)
     kluc.export_key_pair('keys.json')
     kluc.export_seed_only("seed.json")
-    # privatekey, publickey = kluc._import_key_pair('keys.json')
 
 if __name__ == '__main__':
     test()

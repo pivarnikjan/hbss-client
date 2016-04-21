@@ -46,6 +46,7 @@ class Verifier:
         # No hash mismatch, signature valid.
         return True
 
+
 def test():
     key_pair = keys_generation.Keypair(RNG=RNG, hash_function=["sha256", 256])
     sig = signature.Signer(key_pair, "sha256")

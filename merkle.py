@@ -19,7 +19,6 @@
 
 import base64
 import json
-from hashlib import sha256
 from ssl import RAND_bytes as RNG
 from utils.hbss_utills import hash_function_digest
 
@@ -44,7 +43,6 @@ class MerkleTree:
     def __init__(self, merkle_tree_height=3, existing_tree=None, hash_function=None):
         self.private_keyring = []
         self.public_keyring = []
-        self.public_hash = []
         self.hash_tree = [[]]
         self.used_keys = []
         self.signatures = []
@@ -190,8 +188,8 @@ class MerkleTree:
             self.private_keyring[counter] = None
         return keypair
 
-    def _sign_message(self, message, include_nodes=True, include_pubkey=True, force_sign=False):
-        KeyToUse = self.select_unused_key(mark_used=True, force=force_sign)
+    def _sign_message(self, KeyToUse, message, include_nodes=True, include_pubkey=True, force_sign=False):
+        # KeyToUse = self.select_unused_key(mark_used=True, force=force_sign)
         signer = lamport.signature.Signer(KeyToUse, self.hash_fn_name)
 
         signature = {}
@@ -203,19 +201,18 @@ class MerkleTree:
         return signature
 
     def _vrfy_message(self, key, signature_file, message):
-        import_list = []
+        sig_list = []
+
         with open(signature_file, 'r') as json_file:
             signature = json.load(json_file)
+
         sig = signature['sig']
         for unit in sig:
-            import_list.append(base64.b64decode(bytes(unit, 'utf-8')))
-        print(import_list)
-        print(lamport.verification.Verifier(key, self.hash_fn_name).verify_signature(import_list, message))
+            sig_list.append(self._b64str_bin(unit))
 
-        # for unit in signature.get('sig'):
-        # print(signature['sig'])
-        # print(len(unit))
-        # print(signature.get('vrfy'))
+        vrfy = lamport.verification.Verifier(key, self.hash_fn_name)
+        result = vrfy.verify_signature(sig_list, message)
+        return result
 
     def import_tree(self, tree):
         pass
@@ -228,14 +225,13 @@ def test():
     tree = MerkleTree(2, hash_function=["sha256", 256])
 
     key = tree.select_unused_key(mark_used=True, force=False)
-    mysig = tree._sign_message("jano".encode('utf-8'))
-
-    tree._vrfy_message(key, "signature.sig", "jano".encode('utf-8'))
-    # print(tree.root_hash())
-    # print(base64.b64encode(tree.tree_public_key()))
+    mysig = tree._sign_message(key, "jano".encode('utf-8'))
 
     with open("signature.sig", mode='w') as SigOut:
         SigOut.write(json.dumps(mysig, indent=2))
+
+    verify = tree._vrfy_message(key, "signature.sig", "jano".encode('utf-8'))
+    print(verify)
 
 
 if __name__ == '__main__':
