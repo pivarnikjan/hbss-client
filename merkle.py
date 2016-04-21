@@ -193,26 +193,49 @@ class MerkleTree:
         signer = lamport.signature.Signer(KeyToUse, self.hash_fn_name)
 
         signature = {}
-        podpis = signer.generate_signature(message)
-        signature["sig"] = signer._format_signature(podpis)
+        generated_signature = signer.generate_signature(message)
+        signature["sig"] = signer._format_signature(generated_signature)
         signature["vrfy"] = KeyToUse.export_public_key()
         signature["pub"] = self.root_hash()
         signature["path"] = self.get_node_path(self.tree_node_hash(KeyToUse.public_key))
         return signature
 
-    def _vrfy_message(self, key, signature_file, message):
+    def _verify_key_pair(self, key, signature, message):
         sig_list = []
+
+        for unit in signature:
+            sig_list.append(self._b64str_bin(unit))
+
+        verification = lamport.verification.Verifier(key, self.hash_fn_name)
+        result = verification.verify_signature(sig_list, message)
+
+        return result
+
+    def _verify_public_key(self, hash0, path):
+        result = hash0
+
+        for i in range(len(path)):
+            result = self.tree_node_hash([result, path[i]], b64=True)
+        if self.root_hash() == result:
+            return True
+
+        return False
+
+    def verify_message(self, key, signature_file, message):
 
         with open(signature_file, 'r') as json_file:
             signature = json.load(json_file)
 
         sig = signature['sig']
-        for unit in sig:
-            sig_list.append(self._b64str_bin(unit))
+        vrfy = signature['vrfy']
+        path = signature['path']
 
-        vrfy = lamport.verification.Verifier(key, self.hash_fn_name)
-        result = vrfy.verify_signature(sig_list, message)
-        return result
+        if not self._verify_key_pair(key, sig, message):
+            return False
+        elif not self._verify_public_key(self.tree_node_hash(vrfy, b64=True), path):
+            return False
+        else:
+            return True
 
     def import_tree(self, tree):
         pass
@@ -230,7 +253,7 @@ def test():
     with open("signature.sig", mode='w') as SigOut:
         SigOut.write(json.dumps(mysig, indent=2))
 
-    verify = tree._vrfy_message(key, "signature.sig", "jano".encode('utf-8'))
+    verify = tree.verify_message(key, "signature.sig", "jano".encode('utf-8'))
     print(verify)
 
 
