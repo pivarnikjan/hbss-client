@@ -75,7 +75,8 @@ class MerkleTree:
             self.hash_tree[0].append(self.tree_node_hash(newkey.public_key))
 
     def generate_tree(self):
-        'Uses initial leaf values to populate hash-tree.'  # Below: While the length of the last item in the hash tree is greater than 1 (i.e. not root)
+        'Uses initial leaf values to populate hash-tree.'
+        # Below: While the length of the last item in the hash tree is greater than 1 (i.e. not root)
         while len(self.hash_tree[len(self.hash_tree) - 1]) > 1:
             # Immediately create new empty list for new values.
             self.hash_tree.append([])
@@ -93,18 +94,9 @@ class MerkleTree:
                 # Embed new hash "above" constitutent hashes in new layer:
                 self.hash_tree[tree_depth].append(new_node_hash)
 
-    def _exportable_tree(self):
-        exportable_tree = []
-        for layer in self.hash_tree:
-            exportable_tree.append([])
-            for node_hash in layer:
-                b64_str_hash = self._bin_b64str(node_hash)
-                exportable_tree[len(exportable_tree) - 1].append(b64_str_hash)
-        return exportable_tree
-
     def root_hash(self):
         'Returns the root node as binary.'
-        return self._bin_b64str(self.hash_tree[- 1][0])
+        return self._bin_b64str(self.hash_tree[-1][0])
 
     def get_node_path(self, leaf_hash, cue_pairs=False, verify_nodes=True):
         if leaf_hash not in self.hash_tree[0]:
@@ -198,6 +190,8 @@ class MerkleTree:
         signature["vrfy"] = KeyToUse.export_public_key()
         signature["pub"] = self.root_hash()
         signature["path"] = self.get_node_path(self.tree_node_hash(KeyToUse.public_key))
+        self.signatures.append(signature)
+
         return signature
 
     def _verify_key_pair(self, key, signature, message):
@@ -257,7 +251,26 @@ class MerkleTree:
         else:
             return True
 
+    def _exportable_tree(self):
+        exportable_tree = []
+        for layer in self.hash_tree:
+            exportable_tree.append([])
+            for node_hash in layer:
+                b64_str_hash = self._bin_b64str(node_hash)
+                exportable_tree[-1].append(b64_str_hash)
+        return exportable_tree
+
+    def export_tree(self, passphrase=None):
+        # Desired features include a symmetric encryption function.
+        tree = {'public_keys': self.public_keyring,
+                'private_keys': self.private_keyring,
+                'merkle_tree': self._exportable_tree(),
+                'signatures': self.signatures,
+                'used_keys': self.used_keys}
+        return tree
+
     def import_tree(self, tree):
+
         pass
 
     def verify_tree(self):
@@ -265,7 +278,7 @@ class MerkleTree:
 
 
 def test():
-    tree = MerkleTree(2, hash_function=["sha256", 256])
+    tree = MerkleTree(4, hash_function=["sha256", 256])
 
     key = tree.select_unused_key(mark_used=True, force=False)
     mysig = tree._sign_message(key, "jano".encode('utf-8'))
