@@ -211,12 +211,23 @@ class MerkleTree:
 
         return result
 
+    def _concat_function(self, list_of_values):
+        new_list = []
+        decoded_string = [base64.b64decode(item) for item in list_of_values]
+        joined_string = b''.join(decoded_string)
+        digest = hash_function_digest(joined_string, self.hash_fn_name)
+        new_list.append(base64.b64encode(digest))
+        return new_list
+
     def _verify_public_key(self, hash0, path):
-        result = hash0
+
+        list_of_values = [hash0]
 
         for i in range(len(path)):
-            result = self.tree_node_hash([result, path[i]])
-        if self.root_hash() == result:
+            list_of_values.append(bytes(path[i], 'utf-8'))
+            list_of_values = self._concat_function(list_of_values)
+
+        if bytes(self.root_hash(), 'utf-8') == list_of_values[0]:
             return True
 
         return False
@@ -236,17 +247,15 @@ class MerkleTree:
             list_vr.append(base64.b64decode(tmp[1]))
 
         tmp = b''.join(list_vr)
-        print(base64.b64encode(tmp))
         digest = hash_function_digest(tmp, self.hash_fn_name)
-        print(base64.b64encode(digest))
+        b64_digest = base64.b64encode(digest)
 
-
-        # if not self._verify_key_pair(key, sig, message):
-        #     return False
-        # elif not self._verify_public_key(self.tree_node_hash(vrfy, b64=True), path):
-        #     return False
-        # else:
-        #     return True
+        if not self._verify_key_pair(key, sig, message):
+            return False
+        elif not self._verify_public_key(b64_digest, path):
+            return False
+        else:
+            return True
 
     def import_tree(self, tree):
         pass
