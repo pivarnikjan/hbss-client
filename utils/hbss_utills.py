@@ -16,10 +16,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from hashlib import sha512, sha256
-
+from hashlib import sha512, sha256, sha384
+import base64
 from utils import bitstring
 
+
+# TODO: zistit ako spravit return pre meniaci sa nazov funkcie - dict?
 
 def calculate_hash_from_file(afile, hasher, blocksize=65536):
     buf = afile.read(blocksize)
@@ -43,6 +45,30 @@ def hash_function(hash_fn_name):
         return sha256()
 
 
+def _bin_b64str(binary_stuff):
+    'Shorthand: Converts bytes into b64-encoded strings.'
+    return str(base64.b64encode(binary_stuff), 'utf-8')
+
+
+def _exportable_key(key):
+    export_key = []
+    for unit in key:
+        if unit:
+            unit0 = _bin_b64str(unit[0])
+            unit1 = _bin_b64str(unit[1])
+            export_key.append([unit0, unit1])
+        else:
+            export_key.append([])
+    return export_key
+
+
+def _exportable_key_single(key):
+    export_key = []
+    for unit in key:
+        export_key.append(_bin_b64str(unit))
+    return export_key
+
+
 def bit_hash(message_hash):
     'Returns a list of bools representing the bits of message_hash'
     if not isinstance(message_hash, bytes):
@@ -53,6 +79,6 @@ def bit_hash(message_hash):
     # to ints (probably higher memory usage): the values for each
     # bit will be used as list indices for selecting which pubkey hash
     # or private key number to use when signing and verifying.
-    # TODO: Run some comparisons and performance checks to see if
-    # it's faster to use booleans and if/else clauses instead.
+    # TODO: Run some comparisons and performance checks
+    # TODO: to see if it's faster to use booleans and if/else clauses instead.
     return [int(x) for x in list(hash_bits.bin)]

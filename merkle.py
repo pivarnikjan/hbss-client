@@ -1,4 +1,4 @@
-# TODO cele prerobit
+# TODO dopisat komentare
 """
     Implementation of the Quantum-Computer-Resistant Lamport Signature scheme in Python 3
     Copyright (C) 2013  Cathal Garvey
@@ -20,7 +20,7 @@
 import base64
 import json
 from ssl import RAND_bytes as RNG
-from utils.hbss_utills import hash_function_digest
+from utils.hbss_utills import hash_function_digest, _exportable_key, _exportable_key_single
 
 import lamport
 
@@ -40,7 +40,7 @@ class MerkleTree:
         'Restores bytes data from b64-encoded strings.'
         return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
-    def __init__(self, merkle_tree_height=3, existing_tree=None, hash_function=None):
+    def __init__(self, merkle_tree_height=3, existing_tree=None, hash_function=("sha512", 512)):
         self.private_keyring = []
         self.public_keyring = []
         self.hash_tree = [[]]
@@ -157,7 +157,7 @@ class MerkleTree:
             counter += 1
         private_key = self.private_keyring[counter]
 
-        if private_key is None:
+        if private_key == []:
             raise KeyManagementError(
                 "Selected 'unused' key appears to have been used.")
         # Import key as a lamport Keypair.
@@ -177,7 +177,7 @@ class MerkleTree:
             # Don't just mark it used, delete the key so it can't be used
             # again by accident!
             self.mark_key_used(self.tree_node_hash(keypair.public_key))
-            self.private_keyring[counter] = None
+            self.private_keyring[counter] = []
         return keypair
 
     def _sign_message(self, KeyToUse, message, include_nodes=True, include_pubkey=True, force_sign=False):
@@ -262,14 +262,16 @@ class MerkleTree:
 
     def export_tree(self, passphrase=None):
         # Desired features include a symmetric encryption function.
-        tree = {'public_keys': self.public_keyring,
-                'private_keys': self.private_keyring,
+        tree = {'public_keys': _exportable_key_single(self.public_keyring),
+                'private_keys': _exportable_key(self.private_keyring),
                 'merkle_tree': self._exportable_tree(),
                 'signatures': self.signatures,
-                'used_keys': self.used_keys}
+                'used_keys': _exportable_key_single(self.used_keys),
+                'hash_fn_name': self.hash_fn_name,
+                'hash_fn_length': self.hash_fn_length}
         return tree
 
-    def import_tree(self, tree):
+    def import_tree(self, treeFile):
 
         pass
 
@@ -278,8 +280,8 @@ class MerkleTree:
 
 
 def test():
-    tree = MerkleTree(4, hash_function=["sha256", 256])
-
+    tree = MerkleTree(2, hash_function=["sha256", 256])
+    # tree = MerkleTree(2)
     key = tree.select_unused_key(mark_used=True, force=False)
     mysig = tree._sign_message(key, "jano".encode('utf-8'))
 
@@ -289,6 +291,16 @@ def test():
     verify = tree.verify_message(key, "signature.sig", "jano".encode('utf-8'))
     print(verify)
 
+    # pub = tree.public_keyring
+    # for item in pub:
+    #     print(str(base64.b64encode(item),'utf-8'))
+
+    # priv = tree.private_keyring
+    # print(_exportable_key(priv))
+    # [print(base64.b64encode(item)) for item in priv if item is not None]
+    data = tree.export_tree()
+    with open('pokus.txt', 'w') as f:
+        f.write(json.dumps(data, f, indent=2))
 
 if __name__ == '__main__':
     test()
