@@ -50,6 +50,11 @@ def _bin_b64str(binary_stuff):
     return str(base64.b64encode(binary_stuff), 'utf-8')
 
 
+def _b64str_bin(b64_encoded_stuff):
+    'Restores bytes data from b64-encoded strings.'
+    return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
+
+
 def _exportable_key(key):
     export_key = []
     for unit in key:
@@ -67,6 +72,25 @@ def _exportable_key_single(key):
     for unit in key:
         export_key.append(_bin_b64str(unit))
     return export_key
+
+
+def _importable_key(key):
+    import_key = []
+    for unit in key:
+        if unit:
+            unit0 = _b64str_bin(unit[0])
+            unit1 = _b64str_bin(unit[1])
+            import_key.append([unit0, unit1])
+        else:
+            import_key.append([])
+    return import_key
+
+
+def _importable_key_single(key):
+    import_key = []
+    for unit in key:
+        import_key.append(_b64str_bin(unit))
+    return import_key
 
 
 def bit_hash(message_hash):

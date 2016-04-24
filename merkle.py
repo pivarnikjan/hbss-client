@@ -1,4 +1,5 @@
-# TODO dopisat komentare
+# TODO documentation
+# TODO remove static methods and move them into hbss_utills
 """
     Implementation of the Quantum-Computer-Resistant Lamport Signature scheme in Python 3
     Copyright (C) 2013  Cathal Garvey
@@ -20,7 +21,8 @@
 import base64
 import json
 from ssl import RAND_bytes as RNG
-from utils.hbss_utills import hash_function_digest, _exportable_key, _exportable_key_single
+from utils.hbss_utills import hash_function_digest, _exportable_key, _exportable_key_single, _importable_key_single, \
+    _importable_key
 
 import lamport
 
@@ -54,7 +56,7 @@ class MerkleTree:
             self.generate_tree()
         else:
             self.import_tree(existing_tree)
-            self.verify_tree()
+            # self.verify_tree()
 
     def tree_node_hash(self, public_key, b64=False):
         flattened_pubkey = b''.join([b''.join(unitpair) for unitpair in public_key])
@@ -260,6 +262,15 @@ class MerkleTree:
                 exportable_tree[-1].append(b64_str_hash)
         return exportable_tree
 
+    def _importable_tree(self, tree):
+        importable_tree = []
+        for layer in tree:
+            importable_tree.append([])
+            for node_hash in layer:
+                bin_hash = self._b64str_bin(node_hash)
+                importable_tree[-1].append(bin_hash)
+        return importable_tree
+
     def export_tree(self, passphrase=None):
         # Desired features include a symmetric encryption function.
         tree = {'public_keys': _exportable_key_single(self.public_keyring),
@@ -272,35 +283,50 @@ class MerkleTree:
         return tree
 
     def import_tree(self, treeFile):
+        with open(treeFile, 'r') as jsonFile:
+            tree = json.load(jsonFile)
 
-        pass
+        self.public_keyring = _importable_key_single(tree['public_keys'])
+        self.private_keyring = _importable_key(tree['private_keys'])
+        self.hash_tree = self._importable_tree(tree['merkle_tree'])
+        self.signatures = tree['signatures']
+        self.used_keys = _importable_key_single(tree['used_keys'])
+        self.hash_fn_name = tree['hash_fn_name']
+        self.hash_fn_length = tree['hash_fn_length']
 
     def verify_tree(self):
+        # TODO: verify that imported tree is valid
         pass
 
 
 def test():
-    tree = MerkleTree(2, hash_function=["sha256", 256])
+    # tree = MerkleTree(2, hash_function=["sha256", 256])
     # tree = MerkleTree(2)
-    key = tree.select_unused_key(mark_used=True, force=False)
-    mysig = tree._sign_message(key, "jano".encode('utf-8'))
 
-    with open("signature.sig", mode='w') as SigOut:
-        SigOut.write(json.dumps(mysig, indent=2))
+    # key = tree.select_unused_key(mark_used=True, force=False)
+    # mysig = tree._sign_message(key, "dano".encode('utf-8'))
+    #
+    # with open("signature.json", mode='w') as SigOut:
+    #     SigOut.write(json.dumps(mysig, indent=2))
+    #
+    # verify = tree.verify_message(key, "signature.json", "dano".encode('utf-8'))
+    # print(verify)
+    #
+    # data = tree.export_tree()
+    # with open('merkle_tree.json', 'w') as f:
+    #     f.write(json.dumps(data, f, indent=2))
 
-    verify = tree.verify_message(key, "signature.sig", "jano".encode('utf-8'))
-    print(verify)
+    tree = MerkleTree(existing_tree="merkle_tree.json")
+    keys = tree.used_keys
+    # solving by adding dictionary
 
-    # pub = tree.public_keyring
-    # for item in pub:
-    #     print(str(base64.b64encode(item),'utf-8'))
-
-    # priv = tree.private_keyring
-    # print(_exportable_key(priv))
-    # [print(base64.b64encode(item)) for item in priv if item is not None]
-    data = tree.export_tree()
-    with open('pokus.txt', 'w') as f:
-        f.write(json.dumps(data, f, indent=2))
+    # for key in keys:
+    #     verify = tree.verify_message(key, "signature.json", "dano".encode('utf-8'))
+    #     if verify:
+    #         print(verify)
+    #         break
+    # else:
+    #     print("NOT MATCH")
 
 if __name__ == '__main__':
     test()

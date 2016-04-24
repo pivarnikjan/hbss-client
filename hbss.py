@@ -47,16 +47,16 @@ class QuantumSignatureGUI(QMainWindow):
 
         hashFromFile = hbss_utills.calculate_hash_from_file(open(fname, 'rb'), sha512())
 
-        mytree = merkle.MerkleTree(2)
-        publicKey = str(base64.b64encode(mytree.tree_public_key()),'utf-8')
-        dictofPK = {}
-        dictofPK["public_key: "] = publicKey
+        tree = merkle.MerkleTree(2)
+        key = tree.select_unused_key(mark_used=True, force=False)
 
-        mysig = mytree._sign_message(hashFromFile)
-        mysig.update(dictofPK)
+        mysig = tree._sign_message(key, hashFromFile)
 
-        with open("signature.sig",mode='w') as SigOut:
+        with open("signature.sig", mode='w') as SigOut:
             SigOut.write(json.dumps(mysig, indent=2))
+
+        verify = tree.verify_message(key, "signature.sig", hashFromFile)
+        print(verify)
 
         finalMessage = QMessageBox(self)
         finalMessage.information(self,
