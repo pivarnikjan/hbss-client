@@ -178,7 +178,7 @@ class MerkleTree:
         if mark_used:
             # Don't just mark it used, delete the key so it can't be used
             # again by accident!
-            self.mark_key_used(self.tree_node_hash(keypair.public_key))
+            self.mark_key_used(private_key)
             self.private_keyring[counter] = []
         return keypair
 
@@ -277,7 +277,7 @@ class MerkleTree:
                 'private_keys': _exportable_key(self.private_keyring),
                 'merkle_tree': self._exportable_tree(),
                 'signatures': self.signatures,
-                'used_keys': _exportable_key_single(self.used_keys),
+                'used_keys': _exportable_key(self.used_keys),
                 'hash_fn_name': self.hash_fn_name,
                 'hash_fn_length': self.hash_fn_length}
         return tree
@@ -290,7 +290,7 @@ class MerkleTree:
         self.private_keyring = _importable_key(tree['private_keys'])
         self.hash_tree = self._importable_tree(tree['merkle_tree'])
         self.signatures = tree['signatures']
-        self.used_keys = _importable_key_single(tree['used_keys'])
+        self.used_keys = _importable_key(tree['used_keys'])
         self.hash_fn_name = tree['hash_fn_name']
         self.hash_fn_length = tree['hash_fn_length']
 
@@ -300,33 +300,27 @@ class MerkleTree:
 
 
 def test():
-    # tree = MerkleTree(2, hash_function=["sha256", 256])
+    tree = MerkleTree(2, hash_function=["sha256", 256])
     # tree = MerkleTree(2)
 
-    # key = tree.select_unused_key(mark_used=True, force=False)
-    # mysig = tree._sign_message(key, "dano".encode('utf-8'))
-    #
-    # with open("signature.json", mode='w') as SigOut:
-    #     SigOut.write(json.dumps(mysig, indent=2))
-    #
-    # verify = tree.verify_message(key, "signature.json", "dano".encode('utf-8'))
-    # print(verify)
-    #
-    # data = tree.export_tree()
-    # with open('merkle_tree.json', 'w') as f:
-    #     f.write(json.dumps(data, f, indent=2))
+    key = tree.select_unused_key(mark_used=True, force=False)
+    mysig = tree._sign_message(key, "dano".encode('utf-8'))
+
+    with open("signature.json", mode='w') as SigOut:
+        SigOut.write(json.dumps(mysig, indent=2))
+
+    verify = tree.verify_message(key, "signature.json", "dano".encode('utf-8'))
+    print(verify)
+
+    data = tree.export_tree()
+    with open('merkle_tree.json', 'w') as f:
+        f.write(json.dumps(data, f, indent=2))
 
     tree = MerkleTree(existing_tree="merkle_tree.json")
-    keys = tree.used_keys
-    # solving by adding dictionary
-
-    # for key in keys:
-    #     verify = tree.verify_message(key, "signature.json", "dano".encode('utf-8'))
-    #     if verify:
-    #         print(verify)
-    #         break
-    # else:
-    #     print("NOT MATCH")
+    seed = tree.used_keys[0]
+    keypair = lamport.keys_generation.Keypair(private_seed=seed, hash_function=[tree.hash_fn_name, tree.hash_fn_length])
+    verify = tree.verify_message(keypair, "signature.json", "jano".encode('utf-8'))
+    print(verify)
 
 if __name__ == '__main__':
     test()
