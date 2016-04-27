@@ -133,7 +133,7 @@ class MerkleTree:
             # if not self.derive_root()
         return node_list
 
-    def mark_key_used(self, leaf_hash, delete_private=True):
+    def mark_key_used(self, leaf_hash):
         if leaf_hash not in self.used_keys:
             self.used_keys.append(leaf_hash)
 
@@ -182,7 +182,7 @@ class MerkleTree:
             self.private_keyring[counter] = []
         return keypair
 
-    def _sign_message(self, KeyToUse, message, include_nodes=True, include_pubkey=True, force_sign=False):
+    def _sign_message(self, KeyToUse, message):
         # KeyToUse = self.select_unused_key(mark_used=True, force=force_sign)
         signer = lamport.signature.Signer(KeyToUse, self.hash_fn_name)
 
@@ -303,7 +303,15 @@ def test():
     tree = MerkleTree(2, hash_function=["sha256", 256])
     # tree = MerkleTree(2)
 
-    key = tree.select_unused_key(mark_used=True, force=False)
+    try:
+        key = tree.select_unused_key(mark_used=True, force=False)
+    except KeyManagementError:
+        # read from GUI tree_height, hash_function
+        new_tree = MerkleTree(tree_height, hash_function=hash_function_list)
+        key = tree.select_unused_key(mark_used=True, force=True)
+        tree._sign_message(key, new_tree.root_hash())
+        tree = new_tree
+
     mysig = tree._sign_message(key, "dano".encode('utf-8'))
 
     with open("signature.json", mode='w') as SigOut:
