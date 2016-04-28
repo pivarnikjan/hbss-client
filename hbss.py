@@ -9,7 +9,7 @@ import merkle
 from utils import hbss_utills
 
 
-class QuantumSignatureGUI(QMainWindow):
+class QuantumSignatureGUI(QWidget):
     width = 380
     height = 200
     
@@ -55,6 +55,7 @@ class QuantumSignatureGUI(QMainWindow):
             SigOut.write(json.dumps(mysig, indent=2))
 
         verify = tree.verify_message("signature.sig", hashFromFile)
+
         print(verify)
 
         finalMessage = QMessageBox(self)
