@@ -65,7 +65,7 @@ class Signer:
 
 
 def test():
-    key_pair = keys_generation.Keypair(RNG=RNG, hash_function=["sha256", 256])
+    key_pair = keys_generation.Keypair(RNG=RNG, hash_fn=["sha256", 256])
     # key_pair = keys_generation.Keypair(RNG=RNG)
 
     sign = Signer(key_pair, "sha256")
