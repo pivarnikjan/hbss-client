@@ -5,16 +5,16 @@
     Copyright (C) 2013  Cathal Garvey
 
     This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Affero General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
@@ -40,11 +40,11 @@ class Keypair():
         'Shorthand: Restores bytes data from b64-encoded strings.'
         return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
-    def __init__(self, private_seed=None, key_data=None, RNG=None, hash_function=None,
+    def __init__(self, private_seed=None, key_data=None, RNG=None, hash_fn=None,
                  all_RNG=False):
 
-        self.hash_fn_name = hash_function[0]
-        self.hash_fn_length = hash_function[1]
+        self.hash_fn_name = hash_fn[0]
+        self.hash_fn_length = hash_fn[1]
 
         if private_seed:
             private_seed = private_seed
@@ -52,7 +52,7 @@ class Keypair():
         elif key_data:
             self.private_key, self.public_key = self._import_key_pair(key_data)
             self.rng_secret = None
-        elif hash_function:
+        elif hash_fn:
             self.RNG = RNG
             self.private_key, self.public_key, self.rng_secret = self.generate_hash_chain_key_pair(
                 preserve_secrets=True)
@@ -154,7 +154,7 @@ class Keypair():
         with open(jsonFile, 'r') as data:
             key_pair = json.load(data)
 
-        return parse_key(key_pair[0]['pub']), parse_key(key_pair[1]['priv'])
+        return parse_key(key_pair['pub']), parse_key(key_pair['priv'])
 
     def _exportable_key(self, key=None):
         export_key = []
@@ -162,15 +162,14 @@ class Keypair():
             unit0 = self._bin_b64str(unit[0])
             unit1 = self._bin_b64str(unit[1])
             export_key.append([unit0, unit1])
+        print(len(export_key))
         return export_key
 
     def export_public_key(self):
         return self._exportable_key(self.public_key)
 
     def export_key_pair(self, file):
-        export_list = []
-        export_list.append({'pub': self._exportable_key(self.public_key)})
-        export_list.append({'priv': self._exportable_key(self.private_key)})
+        export_list = [{'pub': self._exportable_key(self.public_key), 'priv': self._exportable_key(self.private_key)}]
         # export_list.append({'seed': self._exportable_seed()})
 
         with open(file, 'w') as jsonFile:
@@ -178,7 +177,7 @@ class Keypair():
 
 
 def test():
-    kluc = Keypair(RNG=RNG, hash_function=["sha256", 256])
+    kluc = Keypair(RNG=RNG, hash_fn=["sha256", 256])
     # kluc = Keypair(RNG=RNG)
     kluc.export_key_pair('keys.json')
     kluc.export_seed_only("seed.json")

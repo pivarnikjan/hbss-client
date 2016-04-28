@@ -3,16 +3,16 @@
     Copyright (C) 2013  Cathal Garvey
 
     This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Affero General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
@@ -22,6 +22,7 @@ from utils import bitstring
 
 
 # TODO: zistit ako spravit return pre meniaci sa nazov funkcie - dict?
+# TODO: documentation
 
 def calculate_hash_from_file(afile, hasher, blocksize=65536):
     buf = afile.read(blocksize)
@@ -36,6 +37,8 @@ def hash_function_digest(position, hash_fn_name):
         return sha512(position).digest()
     elif hash_fn_name == "sha256":
         return sha256(position).digest()
+    elif hash_fn_name == "sha384":
+        return sha384(position).digest()
 
 
 def hash_function(hash_fn_name):
@@ -43,53 +46,70 @@ def hash_function(hash_fn_name):
         return sha512()
     elif hash_fn_name == "sha256":
         return sha256()
+    elif hash_fn_name == "sha384":
+        return sha384()
 
 
-def _bin_b64str(binary_stuff):
-    'Shorthand: Converts bytes into b64-encoded strings.'
+def bin_b64str(binary_stuff):
+    """
+    Converts bytes into b64-encoded strings.
+
+    Args:
+        binary_stuff:
+
+    Returns: b64-encoded strings
+    """
     return str(base64.b64encode(binary_stuff), 'utf-8')
 
 
-def _b64str_bin(b64_encoded_stuff):
-    'Restores bytes data from b64-encoded strings.'
+def b64str_bin(b64_encoded_stuff):
+    """
+    Restores bytes data from b64-encoded strings.
+
+    Args:
+        b64_encoded_stuff:
+
+    Returns: bytes
+    """
     return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
 
-def _exportable_key(key):
+def exportable_key(key):
+
     export_key = []
     for unit in key:
         if unit:
-            unit0 = _bin_b64str(unit[0])
-            unit1 = _bin_b64str(unit[1])
+            unit0 = bin_b64str(unit[0])
+            unit1 = bin_b64str(unit[1])
             export_key.append([unit0, unit1])
         else:
             export_key.append([])
     return export_key
 
 
-def _exportable_key_single(key):
+def exportable_key_single(key):
     export_key = []
     for unit in key:
-        export_key.append(_bin_b64str(unit))
+        export_key.append(bin_b64str(unit))
     return export_key
 
 
-def _importable_key(key):
+def importable_key(key):
     import_key = []
     for unit in key:
         if unit:
-            unit0 = _b64str_bin(unit[0])
-            unit1 = _b64str_bin(unit[1])
+            unit0 = b64str_bin(unit[0])
+            unit1 = b64str_bin(unit[1])
             import_key.append([unit0, unit1])
         else:
             import_key.append([])
     return import_key
 
 
-def _importable_key_single(key):
+def importable_key_single(key):
     import_key = []
     for unit in key:
-        import_key.append(_b64str_bin(unit))
+        import_key.append(b64str_bin(unit))
     return import_key
 
 
@@ -104,5 +124,5 @@ def bit_hash(message_hash):
     # bit will be used as list indices for selecting which pubkey hash
     # or private key number to use when signing and verifying.
     # TODO: Run some comparisons and performance checks
-    # TODO: to see if it's faster to use booleans and if/else clauses instead.
+    #       to see if it's faster to use booleans and if/else clauses instead.
     return [int(x) for x in list(hash_bits.bin)]

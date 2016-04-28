@@ -1,20 +1,18 @@
-# TODO doplnit komentare jednotlivych tried a metod
-
 """
     Implementation of the Quantum-Computer-Resistant Lamport Signature scheme in Python 3
     Copyright (C) 2013  Cathal Garvey
 
     This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Affero General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import base64
@@ -22,49 +20,44 @@ import json
 from ssl import RAND_bytes as RNG
 
 from lamport import keys_generation
-from utils.hbss_utills import bit_hash, hash_function_digest
+from utils.hbss_utills import bit_hash, hash_function_digest, exportable_key, exportable_key_single
+
+
+# TODO documentation
 
 
 class Signer:
-    def __init__(self, keypair, hash_fn_name):
-        self.keypair = keypair
-        if not self.keypair.private_key:
-            raise ValueError("Specified key has no private part; cannot sign!")
+    def __init__(self, key_pair, hash_fn_name):
+        self.key_pair = key_pair
+        if not self.key_pair.private_key:
+            raise ValueError("Specified key has no private part. Cannot sign!")
         self.hash_fn_name = hash_fn_name
 
     def generate_signature(self, message):
         bithash = bit_hash(hash_function_digest(message, self.hash_fn_name))
-        Revealed_Numbers = []
+        revealed_numbers = []
         counter = 0
         for bit in bithash:
-            private_numbers_for_bit = self.keypair.private_key[counter]
-            Revealed_Numbers.append(private_numbers_for_bit[bit])
+            private_numbers_for_bit = self.key_pair.private_key[counter]
+            revealed_numbers.append(private_numbers_for_bit[bit])
             counter += 1
-        return Revealed_Numbers
+        return revealed_numbers
 
-    def _format_signature(self, signature):
-        exportable_signature = []
-        for unit in signature:
-            exportable_signature.append(str(base64.b64encode(bytes(unit)), encoding='utf-8'))
-        return exportable_signature
+    def export_signature(self, signature, file_name):
+        export_dict = {'sig': exportable_key_single(signature), 'vrfy': exportable_key(self.key_pair.public_key)}
 
-    # TODO: ZMAZAT zbytocna funkcia
-    def export_signature(self, signature, file):
-        export_list = []
-        export_list.append({'sig': self._format_signature(signature)})
+        with open(file_name, 'w') as f:
+            f.write(json.dumps(export_dict, f, indent=2))
 
-        with open(file, 'w') as jsonFile:
-            json.dump(export_list, jsonFile, indent=2)
-
-    # TODO prehodit inam
-    def import_signature(self, signature):
+    @staticmethod
+    def import_signature(signature):
         import_list = []
-        for unit in signature[0]['sig']:
+        for unit in signature['sig']:
             import_list.append(base64.b64decode(bytes(unit, 'utf-8')))
         return import_list
 
-    # TODO zbytocna funkcia? opakuje funkcionalitu
-    def load_signature(self, file):
+    @staticmethod
+    def load_signature(file):
         with open(file, 'r') as data:
             signature = json.load(data)
 
@@ -74,10 +67,11 @@ class Signer:
 def test():
     key_pair = keys_generation.Keypair(RNG=RNG, hash_function=["sha256", 256])
     # key_pair = keys_generation.Keypair(RNG=RNG)
+
     sign = Signer(key_pair, "sha256")
     signature = sign.generate_signature("jano".encode('utf-8'))
-
     sign.export_signature(signature, "signature.json")
+
     tmp = sign.load_signature("signature.json")
     formatS = sign.import_signature(tmp)
     print(formatS)
