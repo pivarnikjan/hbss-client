@@ -8,6 +8,54 @@ import merkle
 from utils import hbss_utills
 
 
+class Login(QtGui.QDialog):
+    def __init__(self, parent=None):
+        super(Login, self).__init__(parent)
+        self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle("Login")
+        self.set_layout()
+
+    def set_layout(self):
+        layout = QtGui.QGridLayout(self)
+        sublayout = QtGui.QVBoxLayout()
+
+        label_login = QtGui.QLabel("Username")
+        sublayout.addWidget(label_login)
+        self.textbox_login = QtGui.QLineEdit()
+        sublayout.addWidget(self.textbox_login)
+
+        label_password = QtGui.QLabel("Password")
+        sublayout.addWidget(label_password)
+        self.textbox_password = QtGui.QLineEdit()
+        self.textbox_password.setEchoMode(self.textbox_password.Password)
+        sublayout.addWidget(self.textbox_password)
+
+        sublayout_horizontal = QtGui.QHBoxLayout()
+        button_login = QtGui.QPushButton("Login", self)
+        button_login.clicked.connect(self.handle_login)
+
+        sublayout_horizontal.addWidget(button_login)
+        button_register = QtGui.QPushButton("Register", self)
+        button_register.clicked.connect(self.handle_register)
+
+        sublayout_horizontal.addWidget(button_register)
+        layout.addLayout(sublayout,0,0)
+        layout.addLayout(sublayout_horizontal,1,0)
+
+    def handle_login(self):
+        if (self.textbox_login.text() == 'foo' and
+            self.textbox_password.text() == 'bar'):
+            self.accept()
+        else:
+            QtGui.QMessageBox.warning(
+                self, 'Error', 'Bad user or password')
+
+    def handle_register(self):
+        pass
+
+
 class QuantumSignatureGUI(QtGui.QWidget):
     def __init__(self, parent=None):
         super(QuantumSignatureGUI, self).__init__(parent)
@@ -85,9 +133,42 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
         return tab2
 
-    @staticmethod
-    def settings_layout():
+    def settings_layout(self):
         tab3 = QtGui.QWidget()
+        grid_layout = QtGui.QGridLayout(tab3)
+
+        sub_layout_top = QtGui.QVBoxLayout()
+        label_for_hash_fn = QtGui.QLabel("Select hash function:")
+        sub_layout_top.addWidget(label_for_hash_fn)
+        q_button_sha256 = QtGui.QRadioButton("sha256")
+        sub_layout_top.addWidget(q_button_sha256)
+        q_button_sha384 = QtGui.QRadioButton("sha384")
+        sub_layout_top.addWidget(q_button_sha384)
+        q_button_sha512 = QtGui.QRadioButton("sha512")
+        q_button_sha512.setChecked(True)
+        sub_layout_top.addWidget(q_button_sha512)
+
+        sub_layout_bottom = QtGui.QVBoxLayout()
+        label_for_random_function = QtGui.QLabel("Select PRNG:")
+        sub_layout_bottom.addWidget(label_for_random_function)
+        q_button_ssl_rng = QtGui.QRadioButton("SSL")
+        q_button_ssl_rng.setChecked(True)
+        sub_layout_bottom.addWidget(q_button_ssl_rng)
+        q_button_ssl_crypto = QtGui.QRadioButton("Crypto")
+        sub_layout_bottom.addWidget(q_button_ssl_crypto)
+
+        button_apply_changes = QtGui.QPushButton("Apply changes")
+
+        sub_layout_right = QtGui.QVBoxLayout()
+        label_for_signature_file = QtGui.QLabel("Signature filename:")
+        sub_layout_right.addWidget(label_for_signature_file)
+        textbox_for_signature = QtGui.QLineEdit()
+        sub_layout_right.addWidget(textbox_for_signature)
+
+        grid_layout.addLayout(sub_layout_top,0,0)
+        grid_layout.addLayout(sub_layout_right,0,2)
+        grid_layout.addLayout(sub_layout_bottom,1,0)
+        grid_layout.addWidget(button_apply_changes,3,3)
         return tab3
 
     def tab_widgets(self):
@@ -154,9 +235,12 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
 def main():
     app = QtGui.QApplication(sys.argv)
-    frame = QuantumSignatureGUI()
-    frame.show()
-    sys.exit(app.exec_())
+    login = Login()
+
+    if login.exec_() == QtGui.QDialog.Accepted:
+        window = QuantumSignatureGUI()
+        window.show()
+        sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
