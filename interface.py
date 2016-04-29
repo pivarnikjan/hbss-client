@@ -1,6 +1,8 @@
-import os, sys, json
+import json
+import sys
 from hashlib import sha512
-from PyQt4 import QtGui, QtCore
+
+from PyQt4 import QtGui
 
 import merkle
 from utils import hbss_utills
@@ -15,9 +17,7 @@ class QuantumSignatureGUI(QtGui.QWidget):
         self.setGeometry(0, 0, 300, 400)
         self.setWindowTitle("Quantum Subscriber")
         self.setWindowIcon(QtGui.QIcon("icon.png"))
-        # self.resize(300, 400)
         self.setFixedSize(600, 400)
-        # self.setMinimumSize(500, 650)
         self.center()
         self.set_layout()
 
@@ -36,80 +36,102 @@ class QuantumSignatureGUI(QtGui.QWidget):
         file.addAction(exit)
         return menu_bar
 
-    def signature(self):
+    def signature_layout(self):
         tab1 = QtGui.QWidget()
-        gridLayout = QtGui.QGridLayout(tab1)
+        grid_layout = QtGui.QGridLayout(tab1)
 
         label_file = QtGui.QLabel("File to SIGN:")
-        gridLayout.addWidget(label_file, 0, 0)
+        grid_layout.addWidget(label_file, 0, 0)
 
-        self.textbox_file = QtGui.QLineEdit()
-        gridLayout.addWidget(self.textbox_file, 0, 1)
+        # noinspection PyAttributeOutsideInit
+        textbox_file = QtGui.QLineEdit()
+        grid_layout.addWidget(textbox_file, 0, 1)
 
         tab1.button_browse = QtGui.QPushButton("Browse", self)
-        tab1.button_browse.clicked.connect(lambda: self.browse_click())
-        gridLayout.addWidget(tab1.button_browse, 0, 4)
-        # button_browse.clicked.connect(self.browse_click())
+        tab1.button_browse.clicked.connect(lambda: self.browse_click(textbox_file))
+        grid_layout.addWidget(tab1.button_browse, 0, 3)
 
-        gridLayout.addWidget(QtGui.QPushButton("Button 3"), 3, 4)
-        gridLayout.addWidget(QtGui.QPushButton("Button 4"), 4, 4)
-        gridLayout.addWidget(QtGui.QPushButton("Button 5"), 5, 4)
+        tab1.button_sign = QtGui.QPushButton("Sign", self)
+        tab1.button_sign.clicked.connect(lambda: self.sign_click(textbox_file))
+        grid_layout.addWidget(tab1.button_sign, 1, 3)
 
         return tab1
 
-    def verification(self):
+    def verification_layout(self):
         tab2 = QtGui.QWidget()
-        p2_vertical = QtGui.QVBoxLayout(tab2)
+        grid_layout = QtGui.QGridLayout(tab2)
+
+        label_file = QtGui.QLabel("File to SIGN:")
+        grid_layout.addWidget(label_file, 0, 0)
+        label_signature = QtGui.QLabel("Signature:")
+        grid_layout.addWidget(label_signature, 1, 0)
+
+        # noinspection PyAttributeOutsideInit
+        textbox_file = QtGui.QLineEdit()
+        grid_layout.addWidget(textbox_file, 0, 1)
+        textbox_signature = QtGui.QLineEdit()
+        grid_layout.addWidget(textbox_signature, 1, 1)
+
+        tab2.button_browse = QtGui.QPushButton("Browse", self)
+        tab2.button_browse.clicked.connect(lambda: self.browse_click(textbox_file))
+        grid_layout.addWidget(tab2.button_browse, 0, 3)
+        tab2.button_browse = QtGui.QPushButton("Browse", self)
+        tab2.button_browse.clicked.connect(lambda: self.browse_click(textbox_signature))
+        grid_layout.addWidget(tab2.button_browse, 1, 3)
+
+        tab2.button_verify = QtGui.QPushButton("Verify", self)
+        tab2.button_verify.clicked.connect(lambda: self.verify_click(textbox_file, textbox_signature))
+        grid_layout.addWidget(tab2.button_verify, 2, 3)
+
         return tab2
 
-    def settings(self):
+    @staticmethod
+    def settings_layout():
         tab3 = QtGui.QWidget()
         return tab3
 
     def tab_widgets(self):
         tab_widget = QtGui.QTabWidget()
-        tab_widget.addTab(self.signature(), "Signature")
-        tab_widget.addTab(self.verification(), "Verification")
-        tab_widget.addTab(self.settings(), "Settings")
+        tab_widget.addTab(self.signature_layout(), "Signature")
+        tab_widget.addTab(self.verification_layout(), "Verification")
+        tab_widget.addTab(self.settings_layout(), "Settings")
         return tab_widget
-
-    def pokus(self):
-        pass
 
     def set_layout(self):
         vbox = QtGui.QGridLayout()
         vbox.addWidget(self.menu())
         vbox.addWidget(self.tab_widgets())
-        # vbox.addWidget(self.old)
-        # typetablayout = QtGui.QGridLayout(vbox)
-
         self.setLayout(vbox)
 
-    def browse_click(self):
+    @staticmethod
+    def browse_click(textbox_file):
         dlg = QtGui.QFileDialog()
         filename = QtGui.QFileDialog.getOpenFileName(dlg, 'Open File', '/')
-        self.textbox_file.setText(filename)
+        textbox_file.setText(filename)
 
-    def sign_click(self):
-        fname = self.fileTextbox.text()
+    def sign_click(self, textbox_file):
+        fname = textbox_file.text()
 
-        hashFromFile = hbss_utills.calculate_hash_from_file(open(fname, 'rb'), sha512())
+        hash_from_file = hbss_utills.calculate_hash_from_file(open(fname, 'rb'), sha512())
 
         tree = merkle.MerkleTree(2, hash_function=("sha256", 256))
 
-        mysig = tree.sign_message(hashFromFile)
+        mysig = tree.sign_message(hash_from_file)
 
         with open("signature.sig", mode='w') as SigOut:
             SigOut.write(json.dumps(mysig, indent=2))
 
-        verify = tree.verify_message("signature.sig", hashFromFile)
+        verify = tree.verify_message("signature.sig", hash_from_file)
 
         print(verify)
 
-        finalMessage = QtGui.QMessageBox(self)
-        finalMessage.information(self,
-                                 "Message",
-                                 "File was signed and signature was saved into \"signature.sig\"")
+        final_message = QtGui.QMessageBox(self)
+        final_message.information(self,
+                                  "Message",
+                                  "File was signed and signature was saved into \"signature.sig\"")
+
+    def verify_click(self, textbox_file, textbox_signature):
+        pass
 
     def center(self):
         screen = QtGui.QDesktopWidget().screenGeometry()

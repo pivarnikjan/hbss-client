@@ -304,6 +304,7 @@ def test():
     with open("signature.json", mode='w') as SigOut:
         SigOut.write(json.dumps(mysig, indent=2))
 
+    # --- VERIFY PART ---
     verify = tree.verify_message("signature.json", "dano".encode('utf-8'))
     print(verify)
 
