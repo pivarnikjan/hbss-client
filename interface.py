@@ -61,7 +61,7 @@ class QuantumSignatureGUI(QtGui.QWidget):
         tab2 = QtGui.QWidget()
         grid_layout = QtGui.QGridLayout(tab2)
 
-        label_file = QtGui.QLabel("File to SIGN:")
+        label_file = QtGui.QLabel("File to VERIFY:")
         grid_layout.addWidget(label_file, 0, 0)
         label_signature = QtGui.QLabel("Signature:")
         grid_layout.addWidget(label_signature, 1, 0)
@@ -111,19 +111,19 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
     def sign_click(self, textbox_file):
         fname = textbox_file.text()
-
         hash_from_file = hbss_utills.calculate_hash_from_file(open(fname, 'rb'), sha512())
-
         tree = merkle.MerkleTree(2, hash_function=("sha256", 256))
-
         mysig = tree.sign_message(hash_from_file)
 
         with open("signature.sig", mode='w') as SigOut:
             SigOut.write(json.dumps(mysig, indent=2))
 
         verify = tree.verify_message("signature.sig", hash_from_file)
-
         print(verify)
+
+        data = tree.export_tree()
+        with open('merkle_tree.json', 'w') as f:
+            f.write(json.dumps(data, f, indent=2))
 
         final_message = QtGui.QMessageBox(self)
         final_message.information(self,
@@ -131,7 +131,20 @@ class QuantumSignatureGUI(QtGui.QWidget):
                                   "File was signed and signature was saved into \"signature.sig\"")
 
     def verify_click(self, textbox_file, textbox_signature):
-        pass
+        print(textbox_file.text(), textbox_signature.text())
+        hash_from_file = hbss_utills.calculate_hash_from_file(open(textbox_file.text(), 'rb'), sha512())
+        tree = merkle.MerkleTree(existing_tree="merkle_tree.json")
+        verify = tree.verify_message(textbox_signature.text(), hash_from_file)
+
+        verify_message = QtGui.QMessageBox(self)
+        if verify:
+            verify_message.information(self,
+                                       "Message",
+                                       "Successful verification")
+        else:
+            verify_message.warning(self,
+                                   "Message",
+                                   "Verification failed")
 
     def center(self):
         screen = QtGui.QDesktopWidget().screenGeometry()
