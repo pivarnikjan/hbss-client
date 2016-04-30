@@ -4,8 +4,8 @@
 import sys
 import os
 
-class BaseRNG(object):
 
+class BaseRNG(object):
     def __init__(self):
         self.closed = False
         self._selftest()
@@ -28,6 +28,7 @@ class BaseRNG(object):
     # PEP 343: Support for the "with" statement
     def __enter__(self):
         pass
+
     def __exit__(self):
         """PEP 343 support"""
         self.close()
@@ -61,8 +62,8 @@ class BaseRNG(object):
     def _read(self, N):
         raise NotImplementedError("child class must implement this")
 
-class WindowsRNG(BaseRNG):
 
+class WindowsRNG(BaseRNG):
     name = "<CryptGenRandom>"
 
     def __init__(self):
@@ -84,8 +85,8 @@ class WindowsRNG(BaseRNG):
         """
         if self.closed:
             raise ValueError("I/O operation on closed file")
-        data = self.__winrand.read(128*1024)
-        assert (len(data) == 128*1024)
+        data = self.__winrand.read(128 * 1024)
+        assert (len(data) == 128 * 1024)
         BaseRNG.flush(self)
 
     def _close(self):
@@ -101,6 +102,7 @@ class WindowsRNG(BaseRNG):
         self.flush()
         return data
 
+
 def new(*args, **kwargs):
     if os.name == "nt":
         # Windows has a shitty RNG, so PyCrypto included workarounds to fix.
@@ -109,4 +111,3 @@ def new(*args, **kwargs):
         return WindowsRNG(*args, **kwargs)
     else:
         return os.urandom(*args, **kwargs)
-

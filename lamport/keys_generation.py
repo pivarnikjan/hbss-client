@@ -41,7 +41,7 @@ class Keypair():
         return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
     def __init__(self, private_seed=None, key_data=None, RNG=None, hash_fn=None,
-                 all_RNG=False):
+                 all_rng=False):
 
         self.hash_fn_name = hash_fn[0]
         self.hash_fn_length = hash_fn[1]
@@ -65,7 +65,7 @@ class Keypair():
                                 "a file-like interface (i.e. RNG.read(64)), as for e.g. PyCrypto, " + \
                                 "then pass the RNG.read method: Keypair(RNG=myRNG.read)")
             self.RNG = RNG
-            if all_RNG:
+            if all_rng:
                 pass
             else:
                 # Default behaviour without arguments.
@@ -118,11 +118,11 @@ class Keypair():
             return private_key, public_key, secret_seeds
         else:
             # delete our secrets
-            del (secret_seeds)
+            del secret_seeds
             return private_key, public_key, None
 
-    def _import_seed_from_file(self, jsonFile):
-        with open(jsonFile, 'r') as data:
+    def _import_seed_from_file(self, json_file):
+        with open(json_file, 'r') as data:
             secret_seed = json.load(data)
         key_seed = []
         unit0 = self._b64str_bin(secret_seed['seed'][0])
@@ -142,7 +142,7 @@ class Keypair():
             json.dump({'seed': self._exportable_seed()}, jsonFile, indent=2)
 
     # TODO: refactor import key_pair
-    def _import_key_pair(self, jsonFile):
+    def _import_key_pair(self, json_file):
         def parse_key(key):
             key_bin = []
             for unit_pair in key:
@@ -151,7 +151,7 @@ class Keypair():
                 key_bin.append([unit0, unit1])
             return key_bin
 
-        with open(jsonFile, 'r') as data:
+        with open(json_file, 'r') as data:
             key_pair = json.load(data)
 
         return parse_key(key_pair['pub']), parse_key(key_pair['priv'])

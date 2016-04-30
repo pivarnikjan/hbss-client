@@ -3,6 +3,7 @@ import sys
 from hashlib import sha512
 
 from PyQt4 import QtGui
+from PyQt4 import QtCore
 
 import merkle
 from utils import hbss_utills
@@ -11,6 +12,8 @@ from utils import hbss_utills
 class Login(QtGui.QDialog):
     def __init__(self, parent=None):
         super(Login, self).__init__(parent)
+        self.textbox_password = QtGui.QLineEdit()
+        self.textbox_login = QtGui.QLineEdit()
         self.init_ui()
 
     def init_ui(self):
@@ -23,12 +26,10 @@ class Login(QtGui.QDialog):
 
         label_login = QtGui.QLabel("Username")
         sublayout.addWidget(label_login)
-        self.textbox_login = QtGui.QLineEdit()
         sublayout.addWidget(self.textbox_login)
 
         label_password = QtGui.QLabel("Password")
         sublayout.addWidget(label_password)
-        self.textbox_password = QtGui.QLineEdit()
         self.textbox_password.setEchoMode(self.textbox_password.Password)
         sublayout.addWidget(self.textbox_password)
 
@@ -41,19 +42,20 @@ class Login(QtGui.QDialog):
         button_register.clicked.connect(self.handle_register)
 
         sublayout_horizontal.addWidget(button_register)
-        layout.addLayout(sublayout,0,0)
-        layout.addLayout(sublayout_horizontal,1,0)
+        layout.addLayout(sublayout, 0, 0)
+        layout.addLayout(sublayout_horizontal, 1, 0)
 
     def handle_login(self):
         if (self.textbox_login.text() == 'foo' and
-            self.textbox_password.text() == 'bar'):
+                    self.textbox_password.text() == 'bar'):
             self.accept()
         else:
             QtGui.QMessageBox.warning(
                 self, 'Error', 'Bad user or password')
 
-    def handle_register(self):
-        pass
+    @staticmethod
+    def handle_register():
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://127.0.0.1:5000/"))
 
 
 class QuantumSignatureGUI(QtGui.QWidget):
@@ -133,7 +135,8 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
         return tab2
 
-    def settings_layout(self):
+    @staticmethod
+    def settings_layout():
         tab3 = QtGui.QWidget()
         grid_layout = QtGui.QGridLayout(tab3)
 
@@ -165,10 +168,10 @@ class QuantumSignatureGUI(QtGui.QWidget):
         textbox_for_signature = QtGui.QLineEdit()
         sub_layout_right.addWidget(textbox_for_signature)
 
-        grid_layout.addLayout(sub_layout_top,0,0)
-        grid_layout.addLayout(sub_layout_right,0,2)
-        grid_layout.addLayout(sub_layout_bottom,1,0)
-        grid_layout.addWidget(button_apply_changes,3,3)
+        grid_layout.addLayout(sub_layout_top, 0, 0)
+        grid_layout.addLayout(sub_layout_right, 0, 2)
+        grid_layout.addLayout(sub_layout_bottom, 1, 0)
+        grid_layout.addWidget(button_apply_changes, 3, 3)
         return tab3
 
     def tab_widgets(self):
