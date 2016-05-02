@@ -31,7 +31,7 @@ class KeyManagementError(Exception):
 
 
 class MerkleTree:
-    def __init__(self, merkle_tree_height=8, existing_tree=None, hash_function=("sha512", 512)):
+    def __init__(self, merkle_tree_height=8, PRNG=RNG, existing_tree=None, hash_function=("sha512", 512)):
         self.private_keyring = []
         self.public_keyring = []
         self.hash_tree = [[]]
@@ -39,6 +39,7 @@ class MerkleTree:
         self.signatures = []
         self.hash_fn_name = hash_function[0]
         self.hash_fn_length = hash_function[1]
+        self.PRNG = PRNG
 
         if not existing_tree:
             self._generate_hashchain_keypairs(merkle_tree_height)
@@ -59,7 +60,7 @@ class MerkleTree:
 
         while keynum > 0:
             keynum -= 1
-            newkey = lamport.keys_generation.Keypair(RNG=RNG, hash_fn=[self.hash_fn_name, self.hash_fn_length])
+            newkey = lamport.keys_generation.Keypair(RNG=self.PRNG, hash_fn=[self.hash_fn_name, self.hash_fn_length])
             self.private_keyring.append(newkey.rng_secret)
             self.public_keyring.append(self.tree_node_hash(newkey.public_key))
             self.hash_tree[0].append(self.tree_node_hash(newkey.public_key))
