@@ -134,7 +134,7 @@ class QuantumSignatureGUI(QtGui.QWidget):
         return tab2
 
     def settings_hash_function(self):
-        group_box = QtGui.QGroupBox("Select hash function")
+        group_box = QtGui.QGroupBox("Select hash function:")
 
         radio1 = QtGui.QRadioButton("sha256")
         radio2 = QtGui.QRadioButton("sha384")
@@ -144,7 +144,7 @@ class QuantumSignatureGUI(QtGui.QWidget):
         radio2.toggled.connect(lambda: self.button_state(radio2))
         radio3.toggled.connect(lambda: self.button_state(radio3))
 
-        radio1.setChecked(True)
+        radio3.setChecked(True)
 
         vbox = QtGui.QVBoxLayout()
         vbox.addWidget(radio1)
@@ -176,55 +176,80 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
     @staticmethod
     def settings_filename(tab):
-        group_box = QtGui.QGroupBox()
+        group_box = QtGui.QGroupBox('Signature filename:')
 
-        label_for_signature_file = QtGui.QLabel("Signature filename:")
-        tab.textbox_for_signature = QtGui.QLineEdit()
+        textbox_for_signature = QtGui.QLineEdit()
+        tab.filename = textbox_for_signature.text()
 
         vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(label_for_signature_file)
-        vbox.addWidget(tab.textbox_for_signature)
+        vbox.addWidget(textbox_for_signature)
         group_box.setLayout(vbox)
 
         return group_box
 
     @staticmethod
     def settings_tree_height(tab):
-        group_box = QtGui.QGroupBox()
+        group_box = QtGui.QGroupBox("Merkle tree height:")
 
-        label_for_tree_height = QtGui.QLabel("Merkle tree height:")
-        tab.spinner_for_height = QtGui.QSpinBox()
-
-        tab.spinner_for_height.setValue(2)
-        tab.spinner_for_height.setMaximum(20)
+        spinner_for_height = QtGui.QSpinBox()
+        spinner_for_height.setValue(2)
+        spinner_for_height.setMaximum(20)
+        tab.tree_height = spinner_for_height.text()
 
         vbox = QtGui.QVBoxLayout()
-        vbox.addWidget(label_for_tree_height)
-        vbox.addWidget(tab.spinner_for_height)
+        vbox.addWidget(spinner_for_height)
         group_box.setLayout(vbox)
 
         return group_box
 
+    @staticmethod
+    def changed_config(tab):
+        if config.filename == tab.filename and \
+                        config.MERKLE_TREE_HEIGHT == tab.tree_height and \
+                        config.HASH_FUNCTION == tab.hash_function and \
+                        config.PRNG == tab.prng:
+            return False
+
     def settings_layout(self):
         tab3 = QtGui.QWidget()
 
+        tab3.hash_function = config.HASH_FUNCTION
+        tab3.prng = config.PRNG
+        tab3.filename = config.filename
+        tab3.tree_height = config.MERKLE_TREE_HEIGHT
+
         button_apply_changes = QtGui.QPushButton("Apply changes")
-        tmp = button_apply_changes.clicked.connect(lambda: self.apply_changes(tab3))
+        button_apply_changes.setEnabled(False)
+        button_apply_changes.clicked.connect(lambda: self.apply_changes(tab3))
+
+        if self.changed_config(tab3):
+            button_apply_changes.setEnabled(True)
 
         grid_layout = QtGui.QGridLayout(tab3)
         grid_layout.addWidget(self.settings_hash_function(), 0, 0)
-        grid_layout.addWidget(self.settings_filename(tab3), 0, 2)
+        grid_layout.addWidget(self.settings_filename(tab3), 0, 1)
         grid_layout.addWidget(self.settings_prng(), 1, 0)
-        grid_layout.addWidget(self.settings_tree_height(tab3), 1, 2)
-        grid_layout.addWidget(button_apply_changes, 3, 3)
+        grid_layout.addWidget(self.settings_tree_height(tab3), 1, 1)
+        grid_layout.addWidget(button_apply_changes, 2, 1)
 
         return tab3
 
-    @staticmethod
-    def apply_changes(tab):
-        config.SIGNATURE_FILENAME = tab.textbox_for_signature
-        # print(tab.textbox_for_signature)
-        config.MERKLE_TREE_HEIGHT = tab.spinner_for_height
+    def validation_filename(self, filename_textbox):
+        filename_message = QtGui.QMessageBox()
+        if not filename_textbox.text():
+            filename_message.warning(self,
+                                     "Message",
+                                     "Signature filename textbox is empty!")
+
+    def apply_changes(self, tab):
+        self.validation_filename(tab.textbox_for_signature)
+        print(tab.spinner_for_height.text())
+        print(tab.textbox_for_signature.text())
+        print(tab.hash_function[:3], type(tab.hash_function[:3]))
+        # config.filename = tab.textbox_for_signature.text()
+        # config.MERKLE_TREE_HEIGHT = tab.spinner_for_height.text()
+        # config.HASH_FUNCTION = tab.hash_function
+        # config.HASH_FUNCTION_LENGTH = int(tab.hash_function[:3])
 
     @staticmethod
     def button_state(radio_button):
@@ -296,12 +321,12 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
 def main():
     app = QtGui.QApplication(sys.argv)
-    login = Login()
+    # login = Login()
 
-    if login.exec_() == QtGui.QDialog.Accepted:
-        window = QuantumSignatureGUI()
-        window.show()
-        sys.exit(app.exec_())
+    # if login.exec_() == QtGui.QDialog.Accepted:
+    window = QuantumSignatureGUI()
+    window.show()
+    sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
