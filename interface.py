@@ -23,28 +23,29 @@ class Login(QtGui.QDialog):
 
     def set_layout(self):
         layout = QtGui.QGridLayout(self)
-        sublayout = QtGui.QVBoxLayout()
 
         label_login = QtGui.QLabel("Username")
-        sublayout.addWidget(label_login)
-        sublayout.addWidget(self.textbox_login)
-
         label_password = QtGui.QLabel("Password")
-        sublayout.addWidget(label_password)
         self.textbox_password.setEchoMode(self.textbox_password.Password)
-        sublayout.addWidget(self.textbox_password)
-
-        sublayout_horizontal = QtGui.QHBoxLayout()
         button_login = QtGui.QPushButton("Login", self)
-        button_login.clicked.connect(self.handle_login)
-
-        sublayout_horizontal.addWidget(button_login)
         button_register = QtGui.QPushButton("Register", self)
+
+        vbox = QtGui.QVBoxLayout()
+        vbox.addWidget(label_login)
+        vbox.addWidget(self.textbox_login)
+        vbox.addWidget(label_password)
+        vbox.addWidget(self.textbox_password)
+
+        hbox = QtGui.QHBoxLayout()
+        hbox.addWidget(button_login)
+        hbox.addWidget(button_register)
+
+        button_login.clicked.connect(self.handle_login)
         button_register.clicked.connect(self.handle_register)
 
-        sublayout_horizontal.addWidget(button_register)
-        layout.addLayout(sublayout, 0, 0)
-        layout.addLayout(sublayout_horizontal, 1, 0)
+        layout.addLayout(vbox, 0, 0)
+        layout.addLayout(hbox, 1, 0)
+        # self.set_layout(layout)
 
     def handle_login(self):
         if (self.textbox_login.text() == 'foo' and
@@ -89,113 +90,132 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
     def signature_layout(self):
         tab1 = QtGui.QWidget()
-        grid_layout = QtGui.QGridLayout(tab1)
 
         label_file = QtGui.QLabel("File to SIGN:")
-        grid_layout.addWidget(label_file, 0, 0)
-
-        # noinspection PyAttributeOutsideInit
         textbox_file = QtGui.QLineEdit()
-        grid_layout.addWidget(textbox_file, 0, 1)
-
         tab1.button_browse = QtGui.QPushButton("Browse", self)
-        tab1.button_browse.clicked.connect(lambda: self.browse_click(textbox_file))
-        grid_layout.addWidget(tab1.button_browse, 0, 3)
-
         tab1.button_sign = QtGui.QPushButton("Sign", self)
-        tab1.button_sign.clicked.connect(lambda: self.sign_click(textbox_file))
+
+        grid_layout = QtGui.QGridLayout(tab1)
+        grid_layout.addWidget(label_file, 0, 0)
+        grid_layout.addWidget(textbox_file, 0, 1)
+        grid_layout.addWidget(tab1.button_browse, 0, 3)
         grid_layout.addWidget(tab1.button_sign, 1, 3)
+
+        tab1.button_browse.clicked.connect(lambda: self.browse_click(textbox_file))
+        tab1.button_sign.clicked.connect(lambda: self.sign_click(textbox_file))
 
         return tab1
 
     def verification_layout(self):
         tab2 = QtGui.QWidget()
-        grid_layout = QtGui.QGridLayout(tab2)
 
         label_file = QtGui.QLabel("File to VERIFY:")
-        grid_layout.addWidget(label_file, 0, 0)
         label_signature = QtGui.QLabel("Signature:")
-        grid_layout.addWidget(label_signature, 1, 0)
-
-        # noinspection PyAttributeOutsideInit
         textbox_file = QtGui.QLineEdit()
-        grid_layout.addWidget(textbox_file, 0, 1)
         textbox_signature = QtGui.QLineEdit()
-        grid_layout.addWidget(textbox_signature, 1, 1)
-
-        tab2.button_browse = QtGui.QPushButton("Browse", self)
-        tab2.button_browse.clicked.connect(lambda: self.browse_click(textbox_file))
-        grid_layout.addWidget(tab2.button_browse, 0, 3)
-        tab2.button_browse = QtGui.QPushButton("Browse", self)
-        tab2.button_browse.clicked.connect(lambda: self.browse_click(textbox_signature))
-        grid_layout.addWidget(tab2.button_browse, 1, 3)
-
+        tab2.button_browse_file = QtGui.QPushButton("Browse", self)
+        tab2.button_browse_signature = QtGui.QPushButton("Browse", self)
         tab2.button_verify = QtGui.QPushButton("Verify", self)
-        tab2.button_verify.clicked.connect(lambda: self.verify_click(textbox_file, textbox_signature))
+
+        grid_layout = QtGui.QGridLayout(tab2)
+        grid_layout.addWidget(label_file, 0, 0)
+        grid_layout.addWidget(label_signature, 1, 0)
+        grid_layout.addWidget(textbox_file, 0, 1)
+        grid_layout.addWidget(textbox_signature, 1, 1)
+        grid_layout.addWidget(tab2.button_browse_file, 0, 3)
+        grid_layout.addWidget(tab2.button_browse_signature, 1, 3)
         grid_layout.addWidget(tab2.button_verify, 2, 3)
+
+        tab2.button_browse_file.clicked.connect(lambda: self.browse_click(textbox_file))
+        tab2.button_browse_signature.clicked.connect(lambda: self.browse_click(textbox_signature))
+        tab2.button_verify.clicked.connect(lambda: self.verify_click(textbox_file, textbox_signature))
 
         return tab2
 
+    def settings_hash_function(self):
+        group_box = QtGui.QGroupBox("Select hash function")
+
+        radio1 = QtGui.QRadioButton("sha256")
+        radio2 = QtGui.QRadioButton("sha384")
+        radio3 = QtGui.QRadioButton("sha512")
+
+        radio1.toggled.connect(lambda: self.button_state(radio1))
+        radio2.toggled.connect(lambda: self.button_state(radio2))
+        radio3.toggled.connect(lambda: self.button_state(radio3))
+
+        radio1.setChecked(True)
+
+        vbox = QtGui.QVBoxLayout()
+        vbox.addWidget(radio1)
+        vbox.addWidget(radio2)
+        vbox.addWidget(radio3)
+        vbox.addStretch(1)
+        group_box.setLayout(vbox)
+
+        return group_box
+
+    def settings_prng(self):
+        group_box = QtGui.QGroupBox("Select PRNG:")
+
+        radio1 = QtGui.QRadioButton("SSL")
+        radio2 = QtGui.QRadioButton("Crypto")
+
+        radio1.toggled.connect(lambda: self.button_state(radio1))
+        radio2.toggled.connect(lambda: self.button_state(radio2))
+
+        radio1.setChecked(True)
+
+        vbox = QtGui.QVBoxLayout()
+        vbox.addWidget(radio1)
+        vbox.addWidget(radio2)
+        vbox.addStretch(1)
+        group_box.setLayout(vbox)
+
+        return group_box
+
+    @staticmethod
+    def settings_filename(tab):
+        group_box = QtGui.QGroupBox()
+
+        label_for_signature_file = QtGui.QLabel("Signature filename:")
+        tab.textbox_for_signature = QtGui.QLineEdit()
+
+        vbox = QtGui.QVBoxLayout()
+        vbox.addWidget(label_for_signature_file)
+        vbox.addWidget(tab.textbox_for_signature)
+        group_box.setLayout(vbox)
+
+        return group_box
+
+    @staticmethod
+    def settings_tree_height(tab):
+        group_box = QtGui.QGroupBox()
+
+        label_for_tree_height = QtGui.QLabel("Merkle tree height:")
+        tab.spinner_for_height = QtGui.QSpinBox()
+
+        tab.spinner_for_height.setValue(2)
+        tab.spinner_for_height.setMaximum(20)
+
+        vbox = QtGui.QVBoxLayout()
+        vbox.addWidget(label_for_tree_height)
+        vbox.addWidget(tab.spinner_for_height)
+        group_box.setLayout(vbox)
+
+        return group_box
+
     def settings_layout(self):
         tab3 = QtGui.QWidget()
-        grid_layout = QtGui.QGridLayout(tab3)
-
-        sub_layout_top = QtGui.QVBoxLayout()
-        hash_function_group = QtGui.QButtonGroup()
-        label_for_hash_fn = QtGui.QLabel("Select hash function:")
-        sub_layout_top.addWidget(label_for_hash_fn)
-
-        q_button_sha256 = QtGui.QRadioButton("sha256")
-        q_button_sha256.toggled.connect(lambda: self.button_state_hash(q_button_sha256))
-        hash_function_group.addButton(q_button_sha256)
-        sub_layout_top.addWidget(q_button_sha256)
-
-        q_button_sha384 = QtGui.QRadioButton("sha384")
-        q_button_sha384.toggled.connect(lambda: self.button_state_hash(q_button_sha384))
-        hash_function_group.addButton(q_button_sha384)
-        sub_layout_top.addWidget(q_button_sha384)
-
-        q_button_sha512 = QtGui.QRadioButton("sha512")
-        q_button_sha512.toggled.connect(lambda: self.button_state_hash(q_button_sha512))
-        hash_function_group.addButton(q_button_sha512)
-        # q_button_sha512.setChecked(True)
-        sub_layout_top.addWidget(q_button_sha512)
-
-        sub_layout_bottom = QtGui.QVBoxLayout()
-        prng_group = QtGui.QButtonGroup()
-        label_for_random_function = QtGui.QLabel("Select PRNG:")
-        sub_layout_bottom.addWidget(label_for_random_function)
-
-        q_button_ssl_rng = QtGui.QRadioButton("SSL")
-        # q_button_ssl_rng.setChecked(True)
-        q_button_ssl_rng.toggled.connect(lambda: self.button_state_prng(q_button_ssl_rng))
-        prng_group.addButton(q_button_ssl_rng)
-        sub_layout_bottom.addWidget(q_button_ssl_rng)
-
-        q_button_ssl_crypto = QtGui.QRadioButton("Crypto")
-        q_button_ssl_crypto.toggled.connect(lambda: self.button_state_prng(q_button_ssl_crypto))
-        prng_group.addButton(q_button_ssl_crypto)
-        sub_layout_bottom.addWidget(q_button_ssl_crypto)
-
-        sub_layout_right = QtGui.QVBoxLayout()
-        label_for_signature_file = QtGui.QLabel("Signature filename:")
-        sub_layout_right.addWidget(label_for_signature_file)
-        tab3.textbox_for_signature = QtGui.QLineEdit()
-        sub_layout_right.addWidget(tab3.textbox_for_signature)
-
-        label_for_merkle_tree_height = QtGui.QLabel("Merkle tree height:")
-        sub_layout_right.addWidget(label_for_merkle_tree_height)
-        tab3.spinner_for_height = QtGui.QSpinBox()
-        tab3.spinner_for_height.setValue(2)
-        tab3.spinner_for_height.setMaximum(20)
-        sub_layout_right.addWidget(tab3.spinner_for_height)
 
         button_apply_changes = QtGui.QPushButton("Apply changes")
-        button_apply_changes.clicked.connect(lambda: self.apply_changes(tab3))
+        tmp = button_apply_changes.clicked.connect(lambda: self.apply_changes(tab3))
 
-        grid_layout.addLayout(sub_layout_top, 0, 0)
-        grid_layout.addLayout(sub_layout_right, 0, 2)
-        grid_layout.addLayout(sub_layout_bottom, 1, 0)
+        grid_layout = QtGui.QGridLayout(tab3)
+        grid_layout.addWidget(self.settings_hash_function(), 0, 0)
+        grid_layout.addWidget(self.settings_filename(tab3), 0, 2)
+        grid_layout.addWidget(self.settings_prng(), 1, 0)
+        grid_layout.addWidget(self.settings_tree_height(tab3), 1, 2)
         grid_layout.addWidget(button_apply_changes, 3, 3)
 
         return tab3
@@ -203,15 +223,12 @@ class QuantumSignatureGUI(QtGui.QWidget):
     @staticmethod
     def apply_changes(tab):
         config.SIGNATURE_FILENAME = tab.textbox_for_signature
+        # print(tab.textbox_for_signature)
         config.MERKLE_TREE_HEIGHT = tab.spinner_for_height
 
     @staticmethod
-    def button_state_prng(radio_button):
-        config.PRNG = radio_button.text()
-
-    @staticmethod
-    def button_state_hash(radio_button):
-        config.HASH_FUNCTION = radio_button.text()
+    def button_state(radio_button):
+        return radio_button.text()
 
     def tab_widgets(self):
         tab_widget = QtGui.QTabWidget()
@@ -279,12 +296,12 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
 def main():
     app = QtGui.QApplication(sys.argv)
-    # login = Login()
-    #
-    # if login.exec_() == QtGui.QDialog.Accepted:
-    window = QuantumSignatureGUI()
-    window.show()
-    sys.exit(app.exec_())
+    login = Login()
+
+    if login.exec_() == QtGui.QDialog.Accepted:
+        window = QuantumSignatureGUI()
+        window.show()
+        sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
