@@ -35,6 +35,7 @@ class MerkleTree:
         self.private_keyring = []
         self.public_keyring = []
         self.hash_tree = [[]]
+        self.tree_height = merkle_tree_height
         self.used_keys = []
         self.signatures = []
         self.hash_fn_name = hash_function[0]
@@ -89,6 +90,7 @@ class MerkleTree:
         'Returns the root node as binary.'
         return bin_b64str(self.hash_tree[-1][0])
 
+    # TODO: aj toto je zle - pouzit namiesto toho tu pod nou
     def get_node_path(self, leaf_hash, cue_pairs=False, verify_nodes=True):
         if leaf_hash not in self.hash_tree[0]:
             raise KeyManagementError("Specified leaf_hash not in leaves" + \
@@ -121,6 +123,20 @@ class MerkleTree:
             pass
             # if not self.derive_root()
         return node_list
+
+    def generate_authentication_path(self, leaf_hash):
+        authentication_path = []
+
+        index_s = self.hash_tree[0].index(leaf_hash)
+
+        for i in range(self.tree_height):
+            tmp = index_s // (2 ** i)
+            if tmp % 2 == 1:
+                authentication_path.append(bin_b64str(self.hash_tree[i][tmp - 1]))
+            elif tmp % 2 == 0:
+                authentication_path.append(bin_b64str(self.hash_tree[i][tmp + 1]))
+
+        return authentication_path
 
     def mark_key_used(self, leaf_hash):
         if leaf_hash not in self.used_keys:
@@ -181,6 +197,7 @@ class MerkleTree:
         signature["vrfy"] = KeyToUse.export_public_key()
         signature["pub"] = self.root_hash()
         signature["path"] = self.get_node_path(self.tree_node_hash(KeyToUse.public_key))
+        signature["check_path"] = self.generate_authentication_path(self.tree_node_hash(KeyToUse.public_key))
         self.signatures.append(signature)
 
         return signature
@@ -205,7 +222,19 @@ class MerkleTree:
         new_list.append(base64.b64encode(digest))
         return new_list
 
+    def verify_authentication_path(self, index_s, p_0, auth_path, tree_height):
+        p_h = p_0
+
+        for i in range(tree_height):
+            tmp = index_s // (2 ** i)
+            if tmp % 2 == 1:
+                p_h = base64.b64encode(concatenate_children(auth_path[i], p_h))
+            elif tmp % 2 == 0:
+                p_h = base64.b64encode(concatenate_children(p_h, auth_path[i]))
+        return p_h
+
     def _verify_public_key(self, hash0, path):
+        # TODO: ZLE!!!! prerobit na verify_authentication_path
         list_of_values = [hash0]
 
         for i in range(len(path)):
@@ -286,9 +315,11 @@ class MerkleTree:
         # TODO: verify that imported tree is valid
         pass
 
-    def create_new_tree(self, old_tree, tree_height=8, hash_function=("sha512", 512)):
+    @staticmethod
+    def create_new_tree(old_tree, tree_height=8, hash_function=("sha512", 512)):
         # TODO: Chained trees
-        pass
+        new_tree = [[]]
+        return new_tree
 
 
 def test():
