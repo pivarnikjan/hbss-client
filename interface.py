@@ -277,15 +277,21 @@ class QuantumSignatureGUI(QtGui.QWidget):
     def sign_click(self, textbox_file):
         fname = textbox_file.text()
         hash_from_file = hbss_utills.calculate_hash_from_file(open(fname, 'rb'), sha512())
+
+        if config.PRNG == 'SSL':
+            from ssl import RAND_bytes as RNG
+        elif config.PRNG == 'Crypto':
+            from Crypto import Random as RNG
+
         tree = merkle.MerkleTree(config.MERKLE_TREE_HEIGHT,
-                                 PRNG=config.PRNG,
+                                 PRNG=RNG,
                                  hash_function=(config.HASH_FUNCTION, config.HASH_FUNCTION_LENGTH))
         mysig = tree.sign_message(hash_from_file)
 
         with open(config.SIGNATURE_FILENAME, mode='w') as SigOut:
             SigOut.write(json.dumps(mysig, indent=2))
 
-        verify = tree.verify_message("signature.sig", hash_from_file)
+        verify = tree.verify_message(config.SIGNATURE_FILENAME, hash_from_file)
         print(verify)
 
         data = tree.export_tree()
@@ -321,11 +327,11 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
 def main():
     app = QtGui.QApplication(sys.argv)
-    # login = Login()
+    login = Login()
 
-    # if login.exec_() == QtGui.QDialog.Accepted:
-    window = QuantumSignatureGUI()
-    window.show()
+    if login.exec_() == QtGui.QDialog.Accepted:
+        window = QuantumSignatureGUI()
+        window.show()
     sys.exit(app.exec_())
 
 
