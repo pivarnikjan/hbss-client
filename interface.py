@@ -133,16 +133,16 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
         return tab2
 
-    def settings_hash_function(self):
+    def settings_hash_function(self, tab):
         group_box = QtGui.QGroupBox("Select hash function:")
 
         radio1 = QtGui.QRadioButton("sha256")
         radio2 = QtGui.QRadioButton("sha384")
         radio3 = QtGui.QRadioButton("sha512")
 
-        radio1.toggled.connect(lambda: self.button_state(radio1))
-        radio2.toggled.connect(lambda: self.button_state(radio2))
-        radio3.toggled.connect(lambda: self.button_state(radio3))
+        tab.hash_function = radio1.toggled.connect(lambda: self.button_state(radio1))
+        tab.hash_function = radio2.toggled.connect(lambda: self.button_state(radio2))
+        tab.hash_function = radio3.toggled.connect(lambda: self.button_state(radio3))
 
         radio3.setChecked(True)
 
@@ -155,14 +155,14 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
         return group_box
 
-    def settings_prng(self):
+    def settings_prng(self, tab):
         group_box = QtGui.QGroupBox("Select PRNG:")
 
         radio1 = QtGui.QRadioButton("SSL")
         radio2 = QtGui.QRadioButton("Crypto")
 
-        radio1.toggled.connect(lambda: self.button_state(radio1))
-        radio2.toggled.connect(lambda: self.button_state(radio2))
+        tab.prng = radio1.toggled.connect(lambda: self.button_state(radio1))
+        tab.prng = radio2.toggled.connect(lambda: self.button_state(radio2))
 
         radio1.setChecked(True)
 
@@ -213,22 +213,25 @@ class QuantumSignatureGUI(QtGui.QWidget):
     def settings_layout(self):
         tab3 = QtGui.QWidget()
 
-        tab3.hash_function = config.HASH_FUNCTION
-        tab3.prng = config.PRNG
-        tab3.filename = config.filename
-        tab3.tree_height = config.MERKLE_TREE_HEIGHT
+        try:
+            tab3.hash_function = config.HASH_FUNCTION
+            tab3.prng = config.PRNG
+            tab3.filename = config.filename
+            tab3.tree_height = config.MERKLE_TREE_HEIGHT
+        except:
+            tab3.hash_function = "sha512"
+            tab3.prng = 'SSL'
+            tab3.filename = 'signature'
+            tab3.tree_height = 512
 
         button_apply_changes = QtGui.QPushButton("Apply changes")
-        button_apply_changes.setEnabled(False)
+        # button_apply_changes.setEnabled(False)
         button_apply_changes.clicked.connect(lambda: self.apply_changes(tab3))
 
-        if self.changed_config(tab3):
-            button_apply_changes.setEnabled(True)
-
         grid_layout = QtGui.QGridLayout(tab3)
-        grid_layout.addWidget(self.settings_hash_function(), 0, 0)
+        grid_layout.addWidget(self.settings_hash_function(tab3), 0, 0)
         grid_layout.addWidget(self.settings_filename(tab3), 0, 1)
-        grid_layout.addWidget(self.settings_prng(), 1, 0)
+        grid_layout.addWidget(self.settings_prng(tab3), 1, 0)
         grid_layout.addWidget(self.settings_tree_height(tab3), 1, 1)
         grid_layout.addWidget(button_apply_changes, 2, 1)
 
@@ -242,14 +245,11 @@ class QuantumSignatureGUI(QtGui.QWidget):
                                      "Signature filename textbox is empty!")
 
     def apply_changes(self, tab):
-        self.validation_filename(tab.textbox_for_signature)
-        print(tab.spinner_for_height.text())
-        print(tab.textbox_for_signature.text())
-        print(tab.hash_function[:3], type(tab.hash_function[:3]))
-        # config.filename = tab.textbox_for_signature.text()
-        # config.MERKLE_TREE_HEIGHT = tab.spinner_for_height.text()
-        # config.HASH_FUNCTION = tab.hash_function
-        # config.HASH_FUNCTION_LENGTH = int(tab.hash_function[:3])
+        with open('config.py', 'w'):
+            config.filename = tab.filename
+            config.MERKLE_TREE_HEIGHT = int(tab.tree_height)
+            config.HASH_FUNCTION = tab.hash_function
+            config.HASH_FUNCTION_LENGTH = int(tab.hash_function[:3])
 
     @staticmethod
     def button_state(radio_button):
@@ -277,15 +277,21 @@ class QuantumSignatureGUI(QtGui.QWidget):
     def sign_click(self, textbox_file):
         fname = textbox_file.text()
         hash_from_file = hbss_utills.calculate_hash_from_file(open(fname, 'rb'), sha512())
+
+        if config.PRNG == 'SSL':
+            from ssl import RAND_bytes as RNG
+        elif config.PRNG == 'Crypto':
+            from Crypto import Random as RNG
+
         tree = merkle.MerkleTree(config.MERKLE_TREE_HEIGHT,
-                                 PRNG=config.PRNG,
+                                 PRNG=RNG,
                                  hash_function=(config.HASH_FUNCTION, config.HASH_FUNCTION_LENGTH))
         mysig = tree.sign_message(hash_from_file)
 
         with open(config.SIGNATURE_FILENAME, mode='w') as SigOut:
             SigOut.write(json.dumps(mysig, indent=2))
 
-        verify = tree.verify_message("signature.sig", hash_from_file)
+        verify = tree.verify_message(config.SIGNATURE_FILENAME, hash_from_file)
         print(verify)
 
         data = tree.export_tree()
@@ -321,11 +327,11 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
 def main():
     app = QtGui.QApplication(sys.argv)
-    # login = Login()
+    login = Login()
 
-    # if login.exec_() == QtGui.QDialog.Accepted:
-    window = QuantumSignatureGUI()
-    window.show()
+    if login.exec_() == QtGui.QDialog.Accepted:
+        window = QuantumSignatureGUI()
+        window.show()
     sys.exit(app.exec_())
 
 
