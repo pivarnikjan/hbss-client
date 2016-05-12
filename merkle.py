@@ -34,6 +34,7 @@ class MerkleTree:
     def __init__(self, merkle_tree_height=8, PRNG=RNG, existing_tree=None, hash_function=("sha512", 512)):
         self.private_keyring = []
         self.public_keyring = []
+        self.auth_path = []
         self.hash_tree = [[]]
         self.tree_height = merkle_tree_height
         self.used_keys = []
@@ -43,7 +44,7 @@ class MerkleTree:
         self.PRNG = PRNG
 
         if not existing_tree:
-            self._generate_hashchain_keypairs(merkle_tree_height)
+            self._generate_hashchain_keypairs()
             self.generate_tree()
         else:
             self.import_tree(existing_tree)
@@ -56,14 +57,14 @@ class MerkleTree:
             merkle_node_hash = bin_b64str(merkle_node_hash)
         return merkle_node_hash
 
-    def _generate_hashchain_keypairs(self, merkle_tree_height):
-        keynum = 2 ** merkle_tree_height
+    def _generate_hashchain_keypairs(self):
+        keynum = 2 ** self.tree_height
 
         while keynum > 0:
             keynum -= 1
             newkey = lamport.keys_generation.Keypair(RNG=self.PRNG, hash_fn=[self.hash_fn_name, self.hash_fn_length])
             self.private_keyring.append(newkey.rng_secret)
-            self.public_keyring.append(self.tree_node_hash(newkey.public_key))
+            self.public_keyring.append(self.tree_node_hash(newkey.public_key, b64=True))
             self.hash_tree[0].append(self.tree_node_hash(newkey.public_key))
 
     def generate_tree(self):
@@ -90,39 +91,39 @@ class MerkleTree:
         'Returns the root node as binary.'
         return bin_b64str(self.hash_tree[-1][0])
 
-    # TODO: aj toto je zle - pouzit namiesto toho tu pod nou
-    def get_node_path(self, leaf_hash, cue_pairs=False, verify_nodes=True):
-        if leaf_hash not in self.hash_tree[0]:
-            raise KeyManagementError("Specified leaf_hash not in leaves" + \
-                                     " of Merkle Tree. Hash requested was: " + \
-                                     str(leaf_hash, 'utf-8'))
-        node_list = []
-        node_number = self.hash_tree[0].index(leaf_hash)
-        level_num = 0
-        for level in self.hash_tree:
-            level_num += 1
-            if level_num == len(self.hash_tree):
-                break
-            if node_number % 2:
-                # i.e., if odd: so, use prior node as partner.
-                if cue_pairs:
-                    node_list.append([bin_b64str(level[node_number - 1]), None])
-                else:
-                    node_list.append(bin_b64str(level[node_number - 1]))
-            else:
-                # i.e., if even, so use next node as partner.
-                if cue_pairs:
-                    node_list.append([None, bin_b64str(level[node_number + 1])])
-                else:
-                    node_list.append(bin_b64str(level[node_number + 1]))
-            # Get the node number for the next level of the hash-tree.
-            # Oddly, using int() is faster than using math.floor() for
-            # getting the pre-decimal value of a positive float.
-            node_number = int(node_number / 2)
-        if verify_nodes:
-            pass
-            # if not self.derive_root()
-        return node_list
+    # # TODO: aj toto je zle - pouzit namiesto toho tu pod nou
+    # def get_node_path(self, leaf_hash, cue_pairs=False, verify_nodes=True):
+    #     if leaf_hash not in self.hash_tree[0]:
+    #         raise KeyManagementError("Specified leaf_hash not in leaves" + \
+    #                                  " of Merkle Tree. Hash requested was: " + \
+    #                                  str(leaf_hash, 'utf-8'))
+    #     node_list = []
+    #     node_number = self.hash_tree[0].index(leaf_hash)
+    #     level_num = 0
+    #     for level in self.hash_tree:
+    #         level_num += 1
+    #         if level_num == len(self.hash_tree):
+    #             break
+    #         if node_number % 2:
+    #             # i.e., if odd: so, use prior node as partner.
+    #             if cue_pairs:
+    #                 node_list.append([bin_b64str(level[node_number - 1]), None])
+    #             else:
+    #                 node_list.append(bin_b64str(level[node_number - 1]))
+    #         else:
+    #             # i.e., if even, so use next node as partner.
+    #             if cue_pairs:
+    #                 node_list.append([None, bin_b64str(level[node_number + 1])])
+    #             else:
+    #                 node_list.append(bin_b64str(level[node_number + 1]))
+    #         # Get the node number for the next level of the hash-tree.
+    #         # Oddly, using int() is faster than using math.floor() for
+    #         # getting the pre-decimal value of a positive float.
+    #         node_number = int(node_number / 2)
+    #     if verify_nodes:
+    #         pass
+    #         # if not self.derive_root()
+    #     return node_list
 
     def generate_authentication_path(self, leaf_hash):
         authentication_path = []
@@ -196,8 +197,8 @@ class MerkleTree:
         signature["sig"] = exportable_key_single(generated_signature)
         signature["vrfy"] = KeyToUse.export_public_key()
         signature["pub"] = self.root_hash()
-        signature["path"] = self.get_node_path(self.tree_node_hash(KeyToUse.public_key))
-        signature["check_path"] = self.generate_authentication_path(self.tree_node_hash(KeyToUse.public_key))
+        self.auth_path = self.generate_authentication_path(self.tree_node_hash(KeyToUse.public_key))
+        signature["path"] = self.auth_path
         self.signatures.append(signature)
 
         return signature
@@ -222,15 +223,18 @@ class MerkleTree:
         new_list.append(base64.b64encode(digest))
         return new_list
 
+    def concatenate_children(self, children1, children2):
+        return hash_function_digest(children1 + children2, self.hash_fn_name)
+
     def verify_authentication_path(self, index_s, p_0, auth_path, tree_height):
         p_h = p_0
 
         for i in range(tree_height):
             tmp = index_s // (2 ** i)
             if tmp % 2 == 1:
-                p_h = base64.b64encode(concatenate_children(auth_path[i], p_h))
+                p_h = self.concatenate_children(auth_path[i], p_h)
             elif tmp % 2 == 0:
-                p_h = base64.b64encode(concatenate_children(p_h, auth_path[i]))
+                p_h = self.concatenate_children(p_h, auth_path[i])
         return p_h
 
     def _verify_public_key(self, hash0, path):
@@ -253,19 +257,29 @@ class MerkleTree:
         vrfy = signature['vrfy']
         path = signature['path']
 
-        list_vr = []
-        for tmp in vrfy:
-            list_vr.append(base64.b64decode(tmp[0]))
-            list_vr.append(base64.b64decode(tmp[1]))
+        import_vrfy = importable_key(vrfy)
+        single_node = self.tree_node_hash(import_vrfy)
+        new_path = importable_key_single(path)
+        print('Y_j \t %s' % bin_b64str(single_node))
+        print('orig Y \t %s' % bin_b64str(self.hash_tree[0][0]))
 
-        tmp = b''.join(list_vr)
-        digest = hash_function_digest(tmp, self.hash_fn_name)
-        b64_digest = base64.b64encode(digest)
+        tmp = self.concatenate_children(single_node,new_path[0])
+        tmp2 = self.concatenate_children(tmp,new_path[1])
+        print('pocitany %s' % bin_b64str(tmp2))
+
+        print('path \t %s' % path)
+        print('orig_p \t %s' % self.auth_path)
+        index_s = self.public_keyring.index(bin_b64str(single_node))
+        print('s \t\t %s' % index_s)
+        print('p_k \t %s' % self.root_hash())
+
+        skuska = self.verify_authentication_path(index_s, single_node, new_path, self.tree_height)
+        print('p_h \t %s' % bin_b64str(skuska))
 
         if not self._verify_key_pair(signature_file, message):
             return False
-        elif not self._verify_public_key(b64_digest, path):
-            return False
+        # elif not self._verify_public_key(b64_digest, path):
+        #     return False
         else:
             return True
 
@@ -290,7 +304,7 @@ class MerkleTree:
 
     def export_tree(self, passphrase=None):
         # Desired features include a symmetric encryption function.
-        tree = {'public_keys': exportable_key_single(self.public_keyring),
+        tree = {'public_keys': self.public_keyring,
                 'private_keys': exportable_key(self.private_keyring),
                 'merkle_tree': self._exportable_tree(),
                 'signatures': self.signatures,
@@ -303,7 +317,7 @@ class MerkleTree:
         with open(tree_file, 'r') as jsonFile:
             tree = json.load(jsonFile)
 
-        self.public_keyring = importable_key_single(tree['public_keys'])
+        self.public_keyring = tree['public_keys']
         self.private_keyring = importable_key(tree['private_keys'])
         self.hash_tree = self._importable_tree(tree['merkle_tree'])
         self.signatures = tree['signatures']
@@ -340,13 +354,13 @@ def test():
     verify = tree.verify_message("signature.json", "dano".encode('utf-8'))
     print(verify)
 
-    data = tree.export_tree()
-    with open('merkle_tree.json', 'w') as f:
-        f.write(json.dumps(data, f, indent=2))
-
-    tree = MerkleTree(existing_tree="merkle_tree.json")
-    verify = tree.verify_message("signature.json", "dano".encode('utf-8'))
-    print(verify)
+    # data = tree.export_tree()
+    # with open('merkle_tree.json', 'w') as f:
+    #     f.write(json.dumps(data, f, indent=2))
+    #
+    # tree = MerkleTree(existing_tree="merkle_tree.json")
+    # verify = tree.verify_message("signature.json", "dano".encode('utf-8'))
+    # print(verify)
 
 
 if __name__ == '__main__':
