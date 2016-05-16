@@ -40,8 +40,7 @@ class Keypair():
         'Shorthand: Restores bytes data from b64-encoded strings.'
         return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
-    def __init__(self, private_seed=None, key_data=None, RNG=None, hash_fn=None,
-                 all_rng=False):
+    def __init__(self, RNG, hash_fn=('sha512', 512), private_seed=None, key_data=None, all_rng=False):
 
         self.hash_fn_name = hash_fn[0]
         self.hash_fn_length = hash_fn[1]
@@ -66,8 +65,6 @@ class Keypair():
                                 "then pass the RNG.read method: Keypair(RNG=myRNG.read)")
             self.RNG = RNG
             if all_rng:
-                pass
-            else:
                 # Default behaviour without arguments.
                 self.private_key, self.public_key, self.rng_secret = self.generate_hash_chain_key_pair(
                     preserve_secrets=True)
