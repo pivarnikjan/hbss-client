@@ -25,6 +25,16 @@ from utils import bitstring
 # TODO: documentation
 
 def calculate_hash_from_file(afile, hasher, blocksize=65536):
+    """
+
+    Args:
+        afile:
+        hasher:
+        blocksize:
+
+    Returns:
+
+    """
     buf = afile.read(blocksize)
     while len(buf) > 0:
         hasher.update(buf)
@@ -33,6 +43,15 @@ def calculate_hash_from_file(afile, hasher, blocksize=65536):
 
 
 def hash_function_digest(position, hash_fn_name):
+    """
+
+    Args:
+        position:
+        hash_fn_name:
+
+    Returns:
+
+    """
     if hash_fn_name == "sha512":
         return sha512(position).digest()
     elif hash_fn_name == "sha256":
@@ -42,6 +61,14 @@ def hash_function_digest(position, hash_fn_name):
 
 
 def hash_function(hash_fn_name):
+    """
+
+    Args:
+        hash_fn_name:
+
+    Returns:
+
+    """
     if hash_fn_name == "sha512":
         return sha512()
     elif hash_fn_name == "sha256":
@@ -75,6 +102,14 @@ def b64str_bin(b64_encoded_stuff):
 
 
 def exportable_key(key):
+    """
+
+    Args:
+        key:
+
+    Returns:
+
+    """
 
     export_key = []
     for unit in key:
@@ -88,6 +123,14 @@ def exportable_key(key):
 
 
 def exportable_key_single(key):
+    """
+
+    Args:
+        key:
+
+    Returns:
+
+    """
     export_key = []
     for unit in key:
         export_key.append(bin_b64str(unit))
@@ -95,6 +138,14 @@ def exportable_key_single(key):
 
 
 def importable_key(key):
+    """
+
+    Args:
+        key:
+
+    Returns:
+
+    """
     import_key = []
     for unit in key:
         if unit:
@@ -107,6 +158,14 @@ def importable_key(key):
 
 
 def importable_key_single(key):
+    """
+
+    Args:
+        key:
+
+    Returns:
+
+    """
     import_key = []
     for unit in key:
         import_key.append(b64str_bin(unit))
@@ -114,6 +173,14 @@ def importable_key_single(key):
 
 
 def bit_hash(message_hash):
+    """
+
+    Args:
+        message_hash:
+
+    Returns:
+
+    """
     'Returns a list of bools representing the bits of message_hash'
     if not isinstance(message_hash, bytes):
         raise TypeError(("message_hash must be a binary hash, "

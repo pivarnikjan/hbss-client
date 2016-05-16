@@ -18,10 +18,20 @@ class Login(QtGui.QDialog):
         self.init_ui()
 
     def init_ui(self):
+        """
+
+        Returns:
+
+        """
         self.setWindowTitle("Login")
         self.set_layout()
 
     def set_layout(self):
+        """
+
+        Returns:
+
+        """
         layout = QtGui.QGridLayout(self)
 
         label_login = QtGui.QLabel("Username")
@@ -48,6 +58,11 @@ class Login(QtGui.QDialog):
         # self.set_layout(layout)
 
     def handle_login(self):
+        """
+
+        Returns:
+
+        """
         if (self.textbox_login.text() == 'foo' and
                     self.textbox_password.text() == 'bar'):
             self.accept()
@@ -57,6 +72,11 @@ class Login(QtGui.QDialog):
 
     @staticmethod
     def handle_register():
+        """
+
+        Returns:
+
+        """
         QtGui.QDesktopServices.openUrl(QtCore.QUrl("http://127.0.0.1:5000/"))
 
 
@@ -66,6 +86,11 @@ class QuantumSignatureGUI(QtGui.QWidget):
         self._init_ui()
 
     def _init_ui(self):
+        """
+
+        Returns:
+
+        """
         self.setGeometry(0, 0, 300, 400)
         self.setWindowTitle("Quantum Subscriber")
         self.setWindowIcon(QtGui.QIcon("icon.png"))
@@ -74,6 +99,11 @@ class QuantumSignatureGUI(QtGui.QWidget):
         self.set_layout()
 
     def menu(self):
+        """
+
+        Returns:
+
+        """
         # --- Menu --- #
         synchronize = QtGui.QAction("Synchronize", self)
         logout = QtGui.QAction("Logout", self)
@@ -89,6 +119,11 @@ class QuantumSignatureGUI(QtGui.QWidget):
         return menu_bar
 
     def signature_layout(self):
+        """
+
+        Returns:
+
+        """
         tab1 = QtGui.QWidget()
 
         label_file = QtGui.QLabel("File to SIGN:")
@@ -108,6 +143,11 @@ class QuantumSignatureGUI(QtGui.QWidget):
         return tab1
 
     def verification_layout(self):
+        """
+
+        Returns:
+
+        """
         tab2 = QtGui.QWidget()
 
         label_file = QtGui.QLabel("File to VERIFY:")
@@ -134,6 +174,14 @@ class QuantumSignatureGUI(QtGui.QWidget):
         return tab2
 
     def settings_hash_function(self, tab):
+        """
+
+        Args:
+            tab:
+
+        Returns:
+
+        """
         group_box = QtGui.QGroupBox("Select hash function:")
 
         radio1 = QtGui.QRadioButton("sha256")
@@ -156,6 +204,14 @@ class QuantumSignatureGUI(QtGui.QWidget):
         return group_box
 
     def settings_prng(self, tab):
+        """
+
+        Args:
+            tab:
+
+        Returns:
+
+        """
         group_box = QtGui.QGroupBox("Select PRNG:")
 
         radio1 = QtGui.QRadioButton("SSL")
@@ -176,6 +232,14 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
     @staticmethod
     def settings_filename(tab):
+        """
+
+        Args:
+            tab:
+
+        Returns:
+
+        """
         group_box = QtGui.QGroupBox('Signature filename:')
 
         textbox_for_signature = QtGui.QLineEdit()
@@ -189,6 +253,14 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
     @staticmethod
     def settings_tree_height(tab):
+        """
+
+        Args:
+            tab:
+
+        Returns:
+
+        """
         group_box = QtGui.QGroupBox("Merkle tree height:")
 
         spinner_for_height = QtGui.QSpinBox()
@@ -204,6 +276,14 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
     @staticmethod
     def changed_config(tab):
+        """
+
+        Args:
+            tab:
+
+        Returns:
+
+        """
         if config.filename == tab.filename and \
                         config.MERKLE_TREE_HEIGHT == tab.tree_height and \
                         config.HASH_FUNCTION == tab.hash_function and \
@@ -211,6 +291,11 @@ class QuantumSignatureGUI(QtGui.QWidget):
             return False
 
     def settings_layout(self):
+        """
+
+        Returns:
+
+        """
         tab3 = QtGui.QWidget()
 
         try:
@@ -238,6 +323,14 @@ class QuantumSignatureGUI(QtGui.QWidget):
         return tab3
 
     def validation_filename(self, filename_textbox):
+        """
+
+        Args:
+            filename_textbox:
+
+        Returns:
+
+        """
         filename_message = QtGui.QMessageBox()
         if not filename_textbox.text():
             filename_message.warning(self,
@@ -245,6 +338,14 @@ class QuantumSignatureGUI(QtGui.QWidget):
                                      "Signature filename textbox is empty!")
 
     def apply_changes(self, tab):
+        """
+
+        Args:
+            tab:
+
+        Returns:
+
+        """
         with open('config.py', 'w'):
             config.filename = tab.filename
             config.MERKLE_TREE_HEIGHT = int(tab.tree_height)
@@ -253,9 +354,22 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
     @staticmethod
     def button_state(radio_button):
+        """
+
+        Args:
+            radio_button:
+
+        Returns:
+
+        """
         return radio_button.text()
 
     def tab_widgets(self):
+        """
+
+        Returns:
+
+        """
         tab_widget = QtGui.QTabWidget()
         tab_widget.addTab(self.signature_layout(), "Signature")
         tab_widget.addTab(self.verification_layout(), "Verification")
@@ -263,6 +377,11 @@ class QuantumSignatureGUI(QtGui.QWidget):
         return tab_widget
 
     def set_layout(self):
+        """
+
+        Returns:
+
+        """
         vbox = QtGui.QGridLayout()
         vbox.addWidget(self.menu())
         vbox.addWidget(self.tab_widgets())
@@ -270,11 +389,27 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
     @staticmethod
     def browse_click(textbox_file):
+        """
+
+        Args:
+            textbox_file:
+
+        Returns:
+
+        """
         dlg = QtGui.QFileDialog()
         filename = QtGui.QFileDialog.getOpenFileName(dlg, 'Open File', '/')
         textbox_file.setText(filename)
 
     def sign_click(self, textbox_file):
+        """
+
+        Args:
+            textbox_file:
+
+        Returns:
+
+        """
         fname = textbox_file.text()
         hash_from_file = hbss_utills.calculate_hash_from_file(open(fname, 'rb'), sha512())
 
@@ -304,6 +439,15 @@ class QuantumSignatureGUI(QtGui.QWidget):
                                   "File was signed and signature was saved into %s" % config.SIGNATURE_FILENAME)
 
     def verify_click(self, textbox_file, textbox_signature):
+        """
+
+        Args:
+            textbox_file:
+            textbox_signature:
+
+        Returns:
+
+        """
         print(textbox_file.text(), textbox_signature.text())
         hash_from_file = hbss_utills.calculate_hash_from_file(open(textbox_file.text(), 'rb'), sha512())
         tree = merkle.MerkleTree(existing_tree="merkle_tree.json")
@@ -320,6 +464,11 @@ class QuantumSignatureGUI(QtGui.QWidget):
                                    "Verification failed")
 
     def center(self):
+        """
+
+        Returns:
+
+        """
         screen = QtGui.QDesktopWidget().screenGeometry()
         size = self.geometry()
         self.move((screen.width() - size.width()) / 2, (screen.height() - size.height()) / 2)

@@ -33,6 +33,15 @@ class Verifier:
         self.hash_fn_name = hash_fn_name
 
     def verify_signature(self, message_sig, message):
+        """
+
+        Args:
+            message_sig:
+            message:
+
+        Returns:
+
+        """
         counter = 0
         bithash = bit_hash(hash_function_digest(message, self.hash_fn_name))
 
@@ -49,6 +58,14 @@ class Verifier:
 
     @staticmethod
     def _import_public_key(signature_file):
+        """
+
+        Args:
+            signature_file:
+
+        Returns:
+
+        """
         with open(signature_file, 'r') as json_file:
             sig = json.load(json_file)
 

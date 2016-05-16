@@ -34,6 +34,14 @@ class Signer:
         self.hash_fn_name = hash_fn_name
 
     def generate_signature(self, message):
+        """
+
+        Args:
+            message:
+
+        Returns:
+
+        """
         bithash = bit_hash(hash_function_digest(message, self.hash_fn_name))
         revealed_numbers = []
         counter = 0
@@ -44,6 +52,15 @@ class Signer:
         return revealed_numbers
 
     def export_signature(self, signature, file_name):
+        """
+
+        Args:
+            signature:
+            file_name:
+
+        Returns:
+
+        """
         export_dict = {'sig': exportable_key_single(signature), 'vrfy': exportable_key(self.key_pair.public_key)}
 
         with open(file_name, 'w') as f:
@@ -51,6 +68,14 @@ class Signer:
 
     @staticmethod
     def import_signature(signature):
+        """
+
+        Args:
+            signature:
+
+        Returns:
+
+        """
         import_list = []
         for unit in signature['sig']:
             import_list.append(base64.b64decode(bytes(unit, 'utf-8')))
@@ -58,6 +83,14 @@ class Signer:
 
     @staticmethod
     def load_signature(file):
+        """
+
+        Args:
+            file:
+
+        Returns:
+
+        """
         with open(file, 'r') as data:
             signature = json.load(data)
 

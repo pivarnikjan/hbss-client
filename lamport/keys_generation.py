@@ -32,11 +32,27 @@ except ImportError:
 class Keypair():
     @staticmethod
     def _bin_b64str(binary_stuff):
+        """
+
+        Args:
+            binary_stuff:
+
+        Returns:
+
+        """
         'Shorthand: Converts bytes into b64-encoded strings.'
         return str(base64.b64encode(binary_stuff), 'utf-8')
 
     @staticmethod
     def _b64str_bin(b64_encoded_stuff):
+        """
+
+        Args:
+            b64_encoded_stuff:
+
+        Returns:
+
+        """
         'Shorthand: Restores bytes data from b64-encoded strings.'
         return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
@@ -66,6 +82,14 @@ class Keypair():
             self.RNG = RNG
 
     def _build_public_key(self, private_key=None):
+        """
+
+        Args:
+            private_key:
+
+        Returns:
+
+        """
         'Takes a list of value-pairs (lists or tuples), returns hash-pairs.'
         if not private_key:
             private_key = self.private_key
@@ -79,6 +103,15 @@ class Keypair():
         return new_pubkey
 
     def generate_hash_chain_key_pair(self, secret_seeds=None, preserve_secrets=False):
+        """
+
+        Args:
+            secret_seeds:
+            preserve_secrets:
+
+        Returns:
+
+        """
 
         # Generate a pair of large seeds for use in generating the private key hash-chain.
         if secret_seeds is None:
@@ -115,6 +148,14 @@ class Keypair():
             return private_key, public_key, None
 
     def _import_seed_from_file(self, json_file):
+        """
+
+        Args:
+            json_file:
+
+        Returns:
+
+        """
         with open(json_file, 'r') as data:
             secret_seed = json.load(data)
         key_seed = []
@@ -124,6 +165,11 @@ class Keypair():
         return key_seed
 
     def _exportable_seed(self):
+        """
+
+        Returns:
+
+        """
         export_seed = []
         unit0 = self._bin_b64str(self.rng_secret[0])
         unit1 = self._bin_b64str(self.rng_secret[1])
@@ -131,11 +177,27 @@ class Keypair():
         return export_seed
 
     def export_seed_only(self, file):
+        """
+
+        Args:
+            file:
+
+        Returns:
+
+        """
         with open(file, 'w') as jsonFile:
             json.dump({'seed': self._exportable_seed()}, jsonFile, indent=2)
 
     # TODO: refactor import key_pair
     def _import_key_pair(self, json_file):
+        """
+
+        Args:
+            json_file:
+
+        Returns:
+
+        """
         def parse_key(key):
             key_bin = []
             for unit_pair in key:
@@ -150,6 +212,14 @@ class Keypair():
         return parse_key(key_pair['pub']), parse_key(key_pair['priv'])
 
     def _exportable_key(self, key=None):
+        """
+
+        Args:
+            key:
+
+        Returns:
+
+        """
         export_key = []
         for unit in key:
             unit0 = self._bin_b64str(unit[0])
@@ -159,9 +229,22 @@ class Keypair():
         return export_key
 
     def export_public_key(self):
+        """
+
+        Returns:
+
+        """
         return self._exportable_key(self.public_key)
 
     def export_key_pair(self, file):
+        """
+
+        Args:
+            file:
+
+        Returns:
+
+        """
         export_list = [{'pub': self._exportable_key(self.public_key), 'priv': self._exportable_key(self.private_key)}]
         # export_list.append({'seed': self._exportable_seed()})
 

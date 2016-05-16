@@ -51,6 +51,15 @@ class MerkleTree:
             # self.verify_tree()
 
     def tree_node_hash(self, public_key, b64=False):
+        """
+
+        Args:
+            public_key:
+            b64:
+
+        Returns:
+
+        """
         flattened_pubkey = b''.join([b''.join(unitpair) for unitpair in public_key])
         merkle_node_hash = hash_function_digest(flattened_pubkey, self.hash_fn_name)
         if b64:
@@ -58,6 +67,11 @@ class MerkleTree:
         return merkle_node_hash
 
     def _generate_hashchain_keypairs(self):
+        """
+
+        Returns:
+
+        """
         keynum = 2 ** self.tree_height
 
         while keynum > 0:
@@ -68,6 +82,11 @@ class MerkleTree:
             self.hash_tree[0].append(self.tree_node_hash(newkey.public_key))
 
     def generate_tree(self):
+        """
+
+        Returns:
+
+        """
         'Uses initial leaf values to populate hash-tree.'
         # Below: While the length of the last item in the hash tree is greater than 1 (i.e. not root)
         while len(self.hash_tree[len(self.hash_tree) - 1]) > 1:
@@ -88,6 +107,11 @@ class MerkleTree:
                 self.hash_tree[tree_depth].append(new_node_hash)
 
     def root_hash(self):
+        """
+
+        Returns:
+
+        """
         'Returns the root node as binary.'
         return bin_b64str(self.hash_tree[-1][0])
 
@@ -126,6 +150,14 @@ class MerkleTree:
     #     return node_list
 
     def generate_authentication_path(self, leaf_hash):
+        """
+
+        Args:
+            leaf_hash:
+
+        Returns:
+
+        """
         authentication_path = []
 
         index_s = self.hash_tree[0].index(leaf_hash)
@@ -140,16 +172,41 @@ class MerkleTree:
         return authentication_path
 
     def mark_key_used(self, leaf_hash):
+        """
+
+        Args:
+            leaf_hash:
+
+        Returns:
+
+        """
         if leaf_hash not in self.used_keys:
             self.used_keys.append(leaf_hash)
 
     def _is_used(self, leaf_hash):
+        """
+
+        Args:
+            leaf_hash:
+
+        Returns:
+
+        """
         if leaf_hash in self.used_keys:
             return True
         else:
             return False
 
     def select_unused_key(self, mark_used=True, force=False):
+        """
+
+        Args:
+            mark_used:
+            force:
+
+        Returns:
+
+        """
         if len(self.used_keys) == len(self.hash_tree[0]) - 1:
             if not force:
                 print("Only one key remains; you should use this key " + \
@@ -189,6 +246,15 @@ class MerkleTree:
         return keypair
 
     def sign_message(self, message, force_sign=False):
+        """
+
+        Args:
+            message:
+            force_sign:
+
+        Returns:
+
+        """
         KeyToUse = self.select_unused_key(mark_used=True, force=force_sign)
         signer = lamport.signature.Signer(KeyToUse, self.hash_fn_name)
 
@@ -204,6 +270,15 @@ class MerkleTree:
         return signature
 
     def _verify_key_pair(self, signature_list, message):
+        """
+
+        Args:
+            signature_list:
+            message:
+
+        Returns:
+
+        """
         def import_signature(signature):
             with open(signature, 'r') as json_file:
                 sig = json.load(json_file)
@@ -216,6 +291,14 @@ class MerkleTree:
         return result
 
     def _concat_function(self, list_of_values):
+        """
+
+        Args:
+            list_of_values:
+
+        Returns:
+
+        """
         new_list = []
         decoded_string = [base64.b64decode(item) for item in list_of_values]
         joined_string = b''.join(decoded_string)
@@ -224,9 +307,29 @@ class MerkleTree:
         return new_list
 
     def concatenate_children(self, children1, children2):
+        """
+
+        Args:
+            children1:
+            children2:
+
+        Returns:
+
+        """
         return hash_function_digest(children1 + children2, self.hash_fn_name)
 
     def verify_authentication_path(self, index_s, p_0, auth_path, tree_height):
+        """
+
+        Args:
+            index_s:
+            p_0:
+            auth_path:
+            tree_height:
+
+        Returns:
+
+        """
         p_h = p_0
 
         for i in range(tree_height):
@@ -238,6 +341,15 @@ class MerkleTree:
         return p_h
 
     def _verify_public_key(self, hash0, path):
+        """
+
+        Args:
+            hash0:
+            path:
+
+        Returns:
+
+        """
         # TODO: ZLE!!!! prerobit na verify_authentication_path
         list_of_values = [hash0]
 
@@ -251,6 +363,15 @@ class MerkleTree:
         return False
 
     def verify_message(self, signature_file, message):
+        """
+
+        Args:
+            signature_file:
+            message:
+
+        Returns:
+
+        """
         with open(signature_file, 'r') as json_file:
             signature = json.load(json_file)
 
@@ -284,6 +405,11 @@ class MerkleTree:
             return True
 
     def _exportable_tree(self):
+        """
+
+        Returns:
+
+        """
         exportable_tree = []
         for layer in self.hash_tree:
             exportable_tree.append([])
@@ -294,6 +420,14 @@ class MerkleTree:
 
     @staticmethod
     def _importable_tree(tree):
+        """
+
+        Args:
+            tree:
+
+        Returns:
+
+        """
         importable_tree = []
         for layer in tree:
             importable_tree.append([])
@@ -303,6 +437,14 @@ class MerkleTree:
         return importable_tree
 
     def export_tree(self, passphrase=None):
+        """
+
+        Args:
+            passphrase:
+
+        Returns:
+
+        """
         # Desired features include a symmetric encryption function.
         tree = {'public_keys': self.public_keyring,
                 'private_keys': exportable_key(self.private_keyring),
@@ -314,6 +456,14 @@ class MerkleTree:
         return tree
 
     def import_tree(self, tree_file):
+        """
+
+        Args:
+            tree_file:
+
+        Returns:
+
+        """
         with open(tree_file, 'r') as jsonFile:
             tree = json.load(jsonFile)
 
@@ -326,11 +476,26 @@ class MerkleTree:
         self.hash_fn_length = tree['hash_fn_length']
 
     def verify_tree(self):
+        """
+
+        Returns:
+
+        """
         # TODO: verify that imported tree is valid
         pass
 
     @staticmethod
     def create_new_tree(old_tree, tree_height=8, hash_function=("sha512", 512)):
+        """
+
+        Args:
+            old_tree:
+            tree_height:
+            hash_function:
+
+        Returns:
+
+        """
         # TODO: Chained trees
         new_tree = [[]]
         return new_tree
