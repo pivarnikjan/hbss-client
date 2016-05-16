@@ -40,7 +40,7 @@ class Keypair():
         'Shorthand: Restores bytes data from b64-encoded strings.'
         return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
-    def __init__(self, RNG, hash_fn=('sha512', 512), private_seed=None, key_data=None, all_rng=False):
+    def __init__(self, RNG, hash_fn=('sha512', 512), private_seed=None, key_data=None):
 
         self.hash_fn_name = hash_fn[0]
         self.hash_fn_length = hash_fn[1]
@@ -64,10 +64,6 @@ class Keypair():
                                 "a file-like interface (i.e. RNG.read(64)), as for e.g. PyCrypto, " + \
                                 "then pass the RNG.read method: Keypair(RNG=myRNG.read)")
             self.RNG = RNG
-            if all_rng:
-                # Default behaviour without arguments.
-                self.private_key, self.public_key, self.rng_secret = self.generate_hash_chain_key_pair(
-                    preserve_secrets=True)
 
     def _build_public_key(self, private_key=None):
         'Takes a list of value-pairs (lists or tuples), returns hash-pairs.'
@@ -95,15 +91,15 @@ class Keypair():
             new_hashes = [hash_function(self.hash_fn_name), hash_function(self.hash_fn_name)]
             # Make room for the digests to be added to private_key
             append_hashes = []
-            for i in range(0, 2):
+            for j in range(0, 2):
                 # Add prior hash for this position to new hash object:
-                new_hashes[i].update(prior_hashes[i])
+                new_hashes[j].update(prior_hashes[j])
                 # "Salt" the new hash with the secret seed for this position:
-                new_hashes[i].update(secret_seeds[i])
+                new_hashes[j].update(secret_seeds[j])
                 # Digest hash
-                i_digest = new_hashes[i].digest()
+                i_digest = new_hashes[j].digest()
                 # Replace the (now used) prior hash with a new "prior hash"
-                prior_hashes[i] = i_digest
+                prior_hashes[j] = i_digest
                 # Append the new digest to the append_hashes list: this will contain two hashes after this for-loop.
                 append_hashes.append(i_digest)
             # Add the two new secret-salted hash-chain hashes to key list
@@ -174,8 +170,8 @@ class Keypair():
 
 
 def test():
-    kluc = Keypair(RNG=RNG, hash_fn=["sha256", 256])
-    # kluc = Keypair(RNG=RNG)
+    # kluc = Keypair(RNG=RNG, hash_fn=["sha256", 256])
+    kluc = Keypair(RNG=RNG)
     kluc.export_key_pair('keys.json')
     kluc.export_seed_only("seed.json")
 

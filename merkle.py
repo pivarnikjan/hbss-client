@@ -170,7 +170,7 @@ class MerkleTree:
                 "Selected 'unused' key appears to have been used.")
         # Import key as a lamport Keypair.
         try:
-            keypair = lamport.keys_generation.Keypair(private_seed=private_key,
+            keypair = lamport.keys_generation.Keypair(RNG=self.PRNG, private_seed=private_key,
                                                       hash_fn=[self.hash_fn_name, self.hash_fn_length])
 
         except IndexError as e:
