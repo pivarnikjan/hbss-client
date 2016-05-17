@@ -56,6 +56,7 @@ class Keypair():
         'Shorthand: Restores bytes data from b64-encoded strings.'
         return base64.b64decode(bytes(b64_encoded_stuff, 'utf-8'))
 
+
     def __init__(self, RNG, hash_fn=('sha512', 512), private_seed=None, key_data=None):
 
         self.hash_fn_name = hash_fn[0]

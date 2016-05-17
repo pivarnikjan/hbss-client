@@ -31,6 +31,7 @@ class KeyManagementError(Exception):
 
 
 class MerkleTree:
+    # @profile
     def __init__(self, merkle_tree_height=8, PRNG=RNG, existing_tree=None, hash_function=("sha512", 512)):
         self.private_keyring = []
         self.public_keyring = []
@@ -81,6 +82,7 @@ class MerkleTree:
             self.public_keyring.append(self.tree_node_hash(newkey.public_key, b64=True))
             self.hash_tree[0].append(self.tree_node_hash(newkey.public_key))
 
+    # @profile
     def generate_tree(self):
         """
 
@@ -115,40 +117,7 @@ class MerkleTree:
         'Returns the root node as binary.'
         return bin_b64str(self.hash_tree[-1][0])
 
-    # # TODO: aj toto je zle - pouzit namiesto toho tu pod nou
-    # def get_node_path(self, leaf_hash, cue_pairs=False, verify_nodes=True):
-    #     if leaf_hash not in self.hash_tree[0]:
-    #         raise KeyManagementError("Specified leaf_hash not in leaves" + \
-    #                                  " of Merkle Tree. Hash requested was: " + \
-    #                                  str(leaf_hash, 'utf-8'))
-    #     node_list = []
-    #     node_number = self.hash_tree[0].index(leaf_hash)
-    #     level_num = 0
-    #     for level in self.hash_tree:
-    #         level_num += 1
-    #         if level_num == len(self.hash_tree):
-    #             break
-    #         if node_number % 2:
-    #             # i.e., if odd: so, use prior node as partner.
-    #             if cue_pairs:
-    #                 node_list.append([bin_b64str(level[node_number - 1]), None])
-    #             else:
-    #                 node_list.append(bin_b64str(level[node_number - 1]))
-    #         else:
-    #             # i.e., if even, so use next node as partner.
-    #             if cue_pairs:
-    #                 node_list.append([None, bin_b64str(level[node_number + 1])])
-    #             else:
-    #                 node_list.append(bin_b64str(level[node_number + 1]))
-    #         # Get the node number for the next level of the hash-tree.
-    #         # Oddly, using int() is faster than using math.floor() for
-    #         # getting the pre-decimal value of a positive float.
-    #         node_number = int(node_number / 2)
-    #     if verify_nodes:
-    #         pass
-    #         # if not self.derive_root()
-    #     return node_list
-
+    # @profile
     def generate_authentication_path(self, leaf_hash):
         """
 
@@ -318,7 +287,7 @@ class MerkleTree:
         """
         return hash_function_digest(children1 + children2, self.hash_fn_name)
 
-    def verify_authentication_path(self, index_s, p_0, auth_path, tree_height):
+    def _verify_authentication_path(self, index_s, p_0, auth_path, tree_height):
         """
 
         Args:
@@ -340,28 +309,6 @@ class MerkleTree:
                 p_h = self.concatenate_children(p_h, auth_path[i])
         return p_h
 
-    def _verify_public_key(self, hash0, path):
-        """
-
-        Args:
-            hash0:
-            path:
-
-        Returns:
-
-        """
-        # TODO: ZLE!!!! prerobit na verify_authentication_path
-        list_of_values = [hash0]
-
-        for i in range(len(path)):
-            list_of_values.append(bytes(path[i], 'utf-8'))
-            list_of_values = self._concat_function(list_of_values)
-
-        if bytes(self.root_hash(), 'utf-8') == list_of_values[0]:
-            return True
-
-        return False
-
     def verify_message(self, signature_file, message):
         """
 
@@ -381,26 +328,12 @@ class MerkleTree:
         import_vrfy = importable_key(vrfy)
         single_node = self.tree_node_hash(import_vrfy)
         new_path = importable_key_single(path)
-        print('Y_j \t %s' % bin_b64str(single_node))
-        print('orig Y \t %s' % bin_b64str(self.hash_tree[0][0]))
-
-        tmp = self.concatenate_children(single_node,new_path[0])
-        tmp2 = self.concatenate_children(tmp,new_path[1])
-        print('pocitany %s' % bin_b64str(tmp2))
-
-        print('path \t %s' % path)
-        print('orig_p \t %s' % self.auth_path)
         index_s = self.public_keyring.index(bin_b64str(single_node))
-        print('s \t\t %s' % index_s)
-        print('p_k \t %s' % self.root_hash())
-
-        skuska = self.verify_authentication_path(index_s, single_node, new_path, self.tree_height)
-        print('p_h \t %s' % bin_b64str(skuska))
 
         if not self._verify_key_pair(signature_file, message):
             return False
-        # elif not self._verify_public_key(b64_digest, path):
-        #     return False
+        elif not self._verify_authentication_path(index_s, single_node, new_path, len(self.hash_tree[-1])):
+            return False
         else:
             return True
 
@@ -475,42 +408,19 @@ class MerkleTree:
         self.hash_fn_name = tree['hash_fn_name']
         self.hash_fn_length = tree['hash_fn_length']
 
-    def verify_tree(self):
-        """
 
-        Returns:
-
-        """
-        # TODO: verify that imported tree is valid
-        pass
-
-    @staticmethod
-    def create_new_tree(old_tree, tree_height=8, hash_function=("sha512", 512)):
-        """
-
-        Args:
-            old_tree:
-            tree_height:
-            hash_function:
-
-        Returns:
-
-        """
-        # TODO: Chained trees
-        new_tree = [[]]
-        return new_tree
-
-
+# @profile
 def test():
     tree = MerkleTree(2, hash_function=["sha256", 256])
     # tree = MerkleTree(2)
 
-    try:
-        mysig = tree.sign_message("dano".encode('utf-8'))
-    except KeyManagementError:
-        new_tree = tree.create_new_tree(tree)
-        tree = new_tree
-        mysig = tree.sign_message("dano".encode('utf-8'))
+    mysig = tree.sign_message("johny".encode('utf-8'))
+    # try:
+    #     mysig = tree.sign_message("dano".encode('utf-8'))
+    # except KeyManagementError:
+    #     new_tree = tree.create_new_tree(tree)
+    #     tree = new_tree
+    #     mysig = tree.sign_message("dano".encode('utf-8'))
 
     with open("signature.json", mode='w') as SigOut:
         SigOut.write(json.dumps(mysig, indent=2))
@@ -519,13 +429,13 @@ def test():
     verify = tree.verify_message("signature.json", "dano".encode('utf-8'))
     print(verify)
 
-    # data = tree.export_tree()
-    # with open('merkle_tree.json', 'w') as f:
-    #     f.write(json.dumps(data, f, indent=2))
-    #
-    # tree = MerkleTree(existing_tree="merkle_tree.json")
-    # verify = tree.verify_message("signature.json", "dano".encode('utf-8'))
-    # print(verify)
+    data = tree.export_tree()
+    with open('merkle_tree.json', 'w') as f:
+        f.write(json.dumps(data, f, indent=2))
+
+    tree = MerkleTree(existing_tree="merkle_tree.json")
+    verify = tree.verify_message("signature.json", "johny".encode('utf-8'))
+    print(verify)
 
 
 if __name__ == '__main__':
