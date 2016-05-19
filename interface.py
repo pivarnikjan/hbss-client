@@ -373,7 +373,7 @@ class QuantumSignatureGUI(QtGui.QWidget):
         tab_widget = QtGui.QTabWidget()
         tab_widget.addTab(self.signature_layout(), "Signature")
         tab_widget.addTab(self.verification_layout(), "Verification")
-        tab_widget.addTab(self.settings_layout(), "Settings")
+        # tab_widget.addTab(self.settings_layout(), "Settings")
         return tab_widget
 
     def set_layout(self):
@@ -383,7 +383,7 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
         """
         vbox = QtGui.QGridLayout()
-        vbox.addWidget(self.menu())
+        # vbox.addWidget(self.menu())
         vbox.addWidget(self.tab_widgets())
         self.setLayout(vbox)
 
@@ -427,7 +427,7 @@ class QuantumSignatureGUI(QtGui.QWidget):
             SigOut.write(json.dumps(mysig, indent=2))
 
         verify = tree.verify_message(config.SIGNATURE_FILENAME, hash_from_file)
-        print(verify)
+        # print(verify)
 
         data = tree.export_tree()
         with open('merkle_tree.json', 'w') as f:
@@ -448,7 +448,7 @@ class QuantumSignatureGUI(QtGui.QWidget):
         Returns:
 
         """
-        print(textbox_file.text(), textbox_signature.text())
+        # print(textbox_file.text(), textbox_signature.text())
         hash_from_file = hbss_utills.calculate_hash_from_file(open(textbox_file.text(), 'rb'), sha512())
         tree = merkle.MerkleTree(existing_tree="merkle_tree.json")
         verify = tree.verify_message(textbox_signature.text(), hash_from_file)
@@ -476,11 +476,11 @@ class QuantumSignatureGUI(QtGui.QWidget):
 
 def main():
     app = QtGui.QApplication(sys.argv)
-    login = Login()
+    # login = Login()
 
-    if login.exec_() == QtGui.QDialog.Accepted:
-        window = QuantumSignatureGUI()
-        window.show()
+    # if login.exec_() == QtGui.QDialog.Accepted:
+    window = QuantumSignatureGUI()
+    window.show()
     sys.exit(app.exec_())
 
 

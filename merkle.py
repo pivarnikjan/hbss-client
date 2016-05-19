@@ -20,6 +20,10 @@
 import base64
 import json
 from ssl import RAND_bytes as RNG
+# from Crypto import Random
+#
+# _RNG = Random.new()
+# RNG = _RNG.read
 from utils.hbss_utills import hash_function_digest, exportable_key, exportable_key_single, importable_key_single, \
     importable_key, b64str_bin, bin_b64str
 
@@ -248,6 +252,7 @@ class MerkleTree:
         Returns:
 
         """
+
         def import_signature(signature):
             with open(signature, 'r') as json_file:
                 sig = json.load(json_file)
@@ -409,9 +414,8 @@ class MerkleTree:
         self.hash_fn_length = tree['hash_fn_length']
 
 
-# @profile
 def test():
-    tree = MerkleTree(2, hash_function=["sha256", 256])
+    tree = MerkleTree(8, hash_function=["sha512", 512])
     # tree = MerkleTree(2)
 
     mysig = tree.sign_message("johny".encode('utf-8'))
